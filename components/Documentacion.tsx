@@ -23,8 +23,11 @@ export default function Documentacion({
       <div className="h-full rounded-3xl bg-gray-100 shadow-md p-6 flex flex-col relative">
         {/* Flecha */}
         <button
-  onClick={onToggle}
-  className="absolute left-3 top-6 z-50 bg-white shadow rounded-full p-2 hover:scale-105 transition cursor-pointer"
+  onClick={() => {
+    console.log("CLICK FLECHA");
+    onToggle();
+  }}
+  className="absolute -left-5 top-6 z-50 bg-white shadow rounded-full p-2 hover:scale-105 transition cursor-pointer"
 >
   {expanded ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
 </button>
