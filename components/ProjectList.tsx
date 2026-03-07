@@ -7,13 +7,19 @@ export default function ProjectList() {
     { id: 1, code: "SV-3254320326", title: "Proyecto 1", date: "23/03/2026" },
     { id: 2, code: "SV-3254320325", title: "Proyecto 2", date: "21/03/2026" },
     { id: 3, code: "SV-3254320324", title: "Proyecto 3", date: "19/03/2026" },
-    { id: 4, code: "SV-3254320323", title: "Proyecto 4", date: "17/03/2026" },
+    { id: 4, code: "SV-3254320320", title: "Proyecto 4", date: "17/03/2026" },
+    { id: 5, code: "SV-3254320323", title: "Proyecto 4", date: "17/03/2026" },
+    { id: 6, code: "SV-3254320321", title: "Proyecto 4", date: "17/03/2026" },
+    { id: 7, code: "SV-3254320328", title: "Proyecto 4", date: "17/03/2026" },
+    { id: 8, code: "SV-3254320520", title: "Proyecto 4", date: "17/03/2026" },
+    { id: 9, code: "SV-3254320423", title: "Proyecto 4", date: "17/03/2026" },
+    { id: 10, code: "SV-3254340323", title: "Proyecto 4", date: "17/03/2026" },
   ];
 
   const [selectedId, setSelectedId] = useState<number | null>(1);
 
   return (
-    <div className="w-full max-w-xs relative">
+    <div className="w-full max-w-xs h-full flex flex-col relative">
 
       {/* HEADER */}
       <div className="mb-4">
@@ -44,55 +50,55 @@ export default function ProjectList() {
         <p className="text-xl font-bold text-gray-700">Santiago C.</p>
       </div>
 
-      {/* LISTA */}
-      <div className="flex flex-col gap-3 pb-24">
-        {projects.map((project) => {
-          const isSelected = selectedId === project.id;
+      {/* LISTA CON SCROLL */}
+<div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1 scrollbar-thin scrollbar-thumb-gray-300">
+  {projects.map((project) => {
+    const isSelected = selectedId === project.id;
 
-          return (
-            <div
-              key={project.id}
-              onClick={() => setSelectedId(project.id)}
-              className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition
-              ${isSelected ? "bg-gray-300 shadow-inner" : "hover:bg-gray-200"}
-              `}
-            >
-              <div className="w-8 h-8 bg-[#EB0029] rounded-md flex items-center justify-center text-white flex-shrink-0">
-                <FileIcon size={14} strokeWidth={2.5} />
-              </div>
+    return (
+      <div
+        key={project.id}
+        onClick={() => setSelectedId(project.id)}
+        className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition
+        ${isSelected ? "bg-gray-300 shadow-inner" : "hover:bg-gray-200"}
+        `}
+      >
+        <div className="w-8 h-8 bg-[#EB0029] rounded-md flex items-center justify-center text-white flex-shrink-0">
+          <FileIcon size={14} strokeWidth={2.5} />
+        </div>
 
-              <div className="flex-1">
-                <div className="flex items-center">
-                  <span className="text-[#EB0029] text-sm font-semibold">
-                    {project.code}
-                  </span>
-                  <span className="ml-auto text-[10px] text-gray-500">
-                    {project.date}
-                  </span>
-                </div>
+        <div className="flex-1">
+          <div className="flex items-center">
+            <span className="text-[#EB0029] text-sm font-semibold">
+              {project.code}
+            </span>
+            <span className="ml-auto text-[10px] text-gray-500">
+              {project.date}
+            </span>
+          </div>
 
-                <div className="text-xs text-gray-600 mt-1">
-                  {project.title}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* BOTON */}
-        <div className="flex justify-center mt-6">
-          <button className="bg-[#EB0029] text-white text-sm px-6 py-2 rounded-lg hover:bg-red-700 transition">
-            Ver Todos
-          </button>
+          <div className="text-xs text-gray-600 mt-1">
+            {project.title}
+          </div>
         </div>
       </div>
+    );
+  })}
+</div>
+
+{/* BOTON FIJO */}
+<div className="flex justify-center py-7">
+  <button className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition">
+    Ver Todos
+  </button>
+</div>
 
       {/* LOGO */}
-      <div className="absolute bottom-4 left-0 w-full flex justify-center">
+      <div className="mt-auto pt-1 left-0 w-full flex justify-center">
         <img
           src="/images/banortelogo.png"
           alt="Logo"
-          className="h-6"
+          className="h-15"
         />
       </div>
 

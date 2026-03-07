@@ -104,7 +104,7 @@ export default function ChatBot() {
                 if (e.key === "Enter") send();
               }}
               placeholder="Escribe tu pregunta..."
-              className="w-full rounded-full bg-white px-5 pr-14 py-4 text-sm shadow outline-none focus:ring-2 focus:ring-[#EB0029]/30"
+              className="w-full rounded-2xl bg-white px-5 pr-14 py-4 text-sm shadow outline-none focus:ring-2 focus:ring-[#EB0029]/30"
             />
 
             {/* botón enviar dentro del input */}
@@ -122,7 +122,7 @@ export default function ChatBot() {
           <div className="relative">
   <button
     onClick={() => setIsWidgetsOpen(!isWidgetsOpen)}
-    className="h-[56px] px-6 bg-[#EB0029] text-white font-semibold rounded-full shadow hover:bg-red-700 transition flex items-center gap-2"
+    className="h-[50px] px-6 bg-[#EB0029] text-white font-semibold rounded-2xl shadow hover:bg-red-700 transition flex items-center gap-2"
   >
     <LayoutGrid size={18} />
     Widgets
@@ -136,6 +136,7 @@ export default function ChatBot() {
 
         </div>
       </div>
+
     </section>
   );
 }
