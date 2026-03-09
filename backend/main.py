@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from database import engine
 from routes.login_route import router as login_router
-
+from routes.agent_call import router as agent_call
 app = FastAPI()
 
 app.add_middleware(
@@ -15,6 +15,10 @@ app.add_middleware(
 )
 
 app.include_router(login_router)  # ← así registras las rutas
+app.include_router(
+    agent_call,    
+    prefix="/agent",   # <-- prefijo que quieres para todas las rutas del router
+    tags=["VertexAI"])  # ruta agent_call (dario)
 
 @app.get("/test-db")
 def test_db():
