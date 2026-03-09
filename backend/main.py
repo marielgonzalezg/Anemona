@@ -4,6 +4,7 @@ from sqlalchemy import text
 from database import engine
 from routes.login_route import router as login_router
 from routes.agent_call import router as agent_call
+from routes.datos_proyecto_route import router as datos_proyecto_route
 app = FastAPI()
 
 app.add_middleware(
@@ -15,6 +16,7 @@ app.add_middleware(
 )
 
 app.include_router(login_router)  # ← así registras las rutas
+app.include_router(datos_proyecto_route)
 app.include_router(
     agent_call,    
     prefix="/agent",   # <-- prefijo que quieres para todas las rutas del router
