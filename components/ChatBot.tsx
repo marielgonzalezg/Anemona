@@ -1,9 +1,7 @@
 "use client";
 
-import { LayoutGrid } from "lucide-react";
-
+import { LayoutGrid, SendHorizonal, Bot, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { SendHorizonal, Bot, User } from "lucide-react";
 import WidgetsModal from "@/components/WidgetsModal";
 
 type Msg = {
@@ -14,10 +12,20 @@ type Msg = {
 
 export default function ChatBot() {
   const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
+
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
-    { id: 1, role: "bot", text: "Hola 👋 (Under Development)" },
+    { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
   ]);
+
+  const [userId, setUserId] = useState("");
+  const [sessionId, setSessionId] = useState("");
+
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [tempUserId, setTempUserId] = useState("");
+
+  const [loadingSession, setLoadingSession] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(false);
 
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -25,30 +33,169 @@ export default function ChatBot() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function send() {
-    const text = input.trim();
-    if (!text) return;
+  useEffect(() => {
+    const savedUserId = sessionStorage.getItem("chat_user_id");
+    const savedSessionId = sessionStorage.getItem("chat_session_id");
 
-    const userMsg: Msg = { id: Date.now(), role: "user", text };
+    if (savedUserId && savedSessionId) {
+      setUserId(savedUserId);
+      setSessionId(savedSessionId);
+      setTempUserId(savedUserId);
+    } else {
+      setShowLoginModal(true);
+    }
+  }, []);
+
+  async function createSession() {
+    const cleanUserId = tempUserId.trim();
+    if (!cleanUserId) return;
+
+    try {
+      setLoadingSession(true);
+
+      const res = await fetch("http://127.0.0.1:8000/agent/sessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: cleanUserId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.detail || "No se pudo crear la sesión.");
+      }
+
+      const data = await res.json();
+
+      setUserId(data.user_id);
+      setSessionId(data.session_id);
+
+      sessionStorage.setItem("chat_user_id", data.user_id);
+      sessionStorage.setItem("chat_session_id", data.session_id);
+
+      setShowLoginModal(false);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: "bot",
+          text: `Sesión iniciada para ${data.user_id}. Ya puedes comenzar a chatear.`,
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Error al crear la sesión");
+    } finally {
+      setLoadingSession(false);
+    }
+  }
+
+  async function send() {
+  const text = input.trim();
+  if (!text || !userId || !sessionId || loadingMessage) return;
+
+  const userMsg: Msg = {
+    id: Date.now(),
+    role: "user",
+    text,
+  };
+
+  setMessages((prev) => [...prev, userMsg]);
+  setInput("");
+  setLoadingMessage(true);
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/agent/query", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        session_id: sessionId,
+        message: text,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null);
+      throw new Error(errorData?.detail || "Error al enviar el mensaje.");
+    }
+
+    const data = await res.json();
+
+    const botText =
+      data.content ||
+      data.response ||
+      data.answer ||
+      data.message ||
+      data.bot_response ||
+      "No recibí respuesta del bot.";
+
     const botMsg: Msg = {
       id: Date.now() + 1,
       role: "bot",
-      text: "Under Development",
+      text: botText,
     };
 
-    setMessages((prev) => [...prev, userMsg, botMsg]);
-    setInput("");
+    setMessages((prev) => [...prev, botMsg]);
+  } catch (error) {
+    console.error(error);
+
+    const errorMsg: Msg = {
+      id: Date.now() + 1,
+      role: "bot",
+      text:
+        error instanceof Error
+          ? `Ocurrió un error: ${error.message}`
+          : "Ocurrió un error al consultar el bot.",
+    };
+
+    setMessages((prev) => [...prev, errorMsg]);
+  } finally {
+    setLoadingMessage(false);
+  }
+}
+
+  function resetSession() {
+    sessionStorage.removeItem("chat_user_id");
+    sessionStorage.removeItem("chat_session_id");
+
+    setUserId("");
+    setSessionId("");
+    setTempUserId("");
+    setShowLoginModal(true);
+
+    setMessages([
+      { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
+    ]);
   }
 
   return (
-    <section className="flex-1 min-w-[420px] min-h-0">
+    <section className="flex-1 min-w-[420px] min-h-0 relative">
       <div className="h-full rounded-3xl bg-gray-100 shadow-md p-6 flex flex-col">
-
         {/* header */}
         <div className="mb-4 text-center">
           <h2 className="text-2xl font-extrabold text-gray-600 tracking-wide">
-            SV-3254320326
+            {sessionId || "Sin sesión"}
           </h2>
+          {userId && (
+            <div className="mt-2 flex items-center justify-center gap-3">
+              <p className="text-sm text-gray-500">
+                Usuario: <span className="font-semibold">{userId}</span>
+              </p>
+              <button
+                onClick={resetSession}
+                className="text-xs px-3 py-1 rounded-full bg-white shadow hover:bg-gray-200 transition"
+              >
+                Cambiar usuario
+              </button>
+            </div>
+          )}
         </div>
 
         {/* mensajes */}
@@ -62,16 +209,14 @@ export default function ChatBot() {
                   : "flex items-start gap-3 justify-end"
               }
             >
-              {/* icono bot */}
               {m.role === "bot" && (
                 <div className="h-10 w-10 rounded-full bg-white shadow flex items-center justify-center">
                   <Bot size={18} className="text-[#EB0029]" />
                 </div>
               )}
 
-              {/* burbuja */}
               <div className="max-w-[70%] rounded-2xl bg-white px-5 py-4 shadow relative">
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                   {m.text}
                 </p>
 
@@ -80,7 +225,6 @@ export default function ChatBot() {
                 )}
               </div>
 
-              {/* icono user */}
               {m.role === "user" && (
                 <div className="h-10 w-10 rounded-full bg-white shadow flex items-center justify-center">
                   <User size={18} className="text-gray-600" />
@@ -88,55 +232,105 @@ export default function ChatBot() {
               )}
             </div>
           ))}
+
+          {loadingMessage && (
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full bg-white shadow flex items-center justify-center">
+                <Bot size={18} className="text-[#EB0029]" />
+              </div>
+              <div className="max-w-[70%] rounded-2xl bg-white px-5 py-4 shadow relative">
+                <p className="text-sm text-gray-500">Escribiendo...</p>
+                <div className="absolute left-0 bottom-0 h-[6px] w-full bg-[#EB0029] rounded-b-2xl" />
+              </div>
+            </div>
+          )}
+
           <div ref={endRef} />
         </div>
 
         {/* input + widgets */}
         <div className="mt-5 flex items-center gap-3 relative">
-
-          {/* input container */}
           <div className="relative flex-1">
-
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") send();
               }}
-              placeholder="Escribe tu pregunta..."
-              className="w-full rounded-2xl bg-white px-5 pr-14 py-4 text-sm shadow outline-none focus:ring-2 focus:ring-[#EB0029]/30"
+              placeholder={
+                userId && sessionId
+                  ? "Escribe tu pregunta..."
+                  : "Primero inicia sesión"
+              }
+              disabled={!userId || !sessionId || loadingMessage}
+              className="w-full rounded-2xl bg-white px-5 pr-14 py-4 text-sm shadow outline-none focus:ring-2 focus:ring-[#EB0029]/30 disabled:bg-gray-200 disabled:cursor-not-allowed"
             />
 
-            {/* botón enviar dentro del input */}
             <button
               onClick={send}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+              disabled={!userId || !sessionId || loadingMessage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Enviar"
             >
               <SendHorizonal className="text-black" size={18} />
             </button>
-
           </div>
 
-          {/* botón widgets afuera */}
           <div className="relative">
-  <button
-    onClick={() => setIsWidgetsOpen(!isWidgetsOpen)}
-    className="h-[50px] px-6 bg-[#EB0029] text-white font-semibold rounded-2xl shadow hover:bg-red-700 transition flex items-center gap-2"
-  >
-    <LayoutGrid size={18} />
-    Widgets
-  </button>
+            <button
+              onClick={() => setIsWidgetsOpen(!isWidgetsOpen)}
+              className="h-[50px] px-6 bg-[#EB0029] text-white font-semibold rounded-2xl shadow hover:bg-red-700 transition flex items-center gap-2"
+            >
+              <LayoutGrid size={18} />
+              Widgets
+            </button>
 
-  <WidgetsModal
-    isOpen={isWidgetsOpen}
-    onClose={() => setIsWidgetsOpen(false)}
-  />
-</div>
-
+            <WidgetsModal
+              isOpen={isWidgetsOpen}
+              onClose={() => setIsWidgetsOpen(false)}
+            />
+          </div>
         </div>
       </div>
 
+      {/* Modal login provisional */}
+      {showLoginModal && (
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-50 rounded-3xl">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 relative">
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={18} />
+            </button>
+
+            <h3 className="text-2xl font-bold text-gray-700 mb-2">
+              Iniciar sesión provisional
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Escribe tu user_id para crear una sesión temporal en memoria.
+            </p>
+
+            <input
+              value={tempUserId}
+              onChange={(e) => setTempUserId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createSession();
+              }}
+              placeholder="Ej. dario_123"
+              className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#EB0029]/30"
+            />
+
+            <button
+              onClick={createSession}
+              disabled={loadingSession || !tempUserId.trim()}
+              className="mt-4 w-full bg-[#EB0029] text-white font-semibold py-3 rounded-2xl hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingSession ? "Creando sesión..." : "Entrar"}
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
