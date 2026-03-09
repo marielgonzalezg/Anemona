@@ -1,12 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Download, CheckCircle, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  CheckCircle,
+  X,
+} from "lucide-react";
+import ERSPreview from "@/components/ERSPreview";
 
 const GOOGLE_DOCS_EMBED_URL =
   "https://docs.google.com/document/d/e/2PACX-1vQvz8HDXl68ZXL4cFdI2rMCN0gXou9zODhEGBZI_YAtfkPkRHDZnFJkn1WX9q6vjQ/pub";
+
 const DRAWIO_EMBED_URL =
   "https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagramaarq.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1K0pWBSO4_RdxmUlAippvNTiQZfnkcoSJ%26export%3Ddownload";
+
 const GOOGLE_DOCS_DOWNLOAD_URL =
   "https://docs.google.com/document/d/TU_DOC_ID/export?format=docx";
 
@@ -25,42 +34,36 @@ function DownloadPopup({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 min-w-[300px] max-w-sm mx-4 animate-in fade-in zoom-in duration-200">
-        {/* Close button */}
+      <div className="relative mx-4 flex min-w-[300px] max-w-sm animate-in zoom-in fade-in flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-2xl duration-200">
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
+          className="absolute top-3 right-3 text-gray-400 transition hover:text-gray-600"
         >
           <X size={18} />
         </button>
 
-        {/* Icon */}
-        <div className="bg-green-100 rounded-full p-4">
+        <div className="rounded-full bg-green-100 p-4">
           <CheckCircle className="text-green-500" size={36} />
         </div>
 
-        {/* Text */}
         <div className="text-center">
-          <h2 className="text-lg font-bold text-gray-800 mb-1">
+          <h2 className="mb-1 text-lg font-bold text-gray-800">
             ¡Descarga exitosa!
           </h2>
-          <p className="text-gray-500 text-sm">
+          <p className="text-sm text-gray-500">
             <span className="font-semibold text-gray-700">{docName}</span> se
             ha descargado correctamente.
           </p>
         </div>
 
-        {/* Confirm button */}
         <button
           onClick={onClose}
-          className="mt-2 px-8 py-2 bg-[#EB0029] text-white rounded-full font-semibold text-sm hover:bg-[#c8001f] transition shadow"
+          className="mt-2 rounded-full bg-[#EB0029] px-8 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#c8001f]"
         >
           Aceptar
         </button>
@@ -101,13 +104,12 @@ export default function Documentacion({
         tab === "Arquitectura"
           ? "arquitectura.drawio"
           : `${DOC_NAMES[tab].replace(/ /g, "_")}.docx`;
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch {
-      // Even if the fetch fails (e.g. CORS), we still show the success popup
-      // since in production the URLs will be accessible
     } finally {
       setShowPopup(true);
     }
@@ -123,54 +125,71 @@ export default function Documentacion({
       )}
 
       <section className={wrapperClass}>
-        <div className="h-full rounded-3xl bg-gray-100 shadow-md p-6 flex flex-col relative">
-
-          {/* Flecha toggle */}
+        <div className="relative flex h-full flex-col rounded-3xl bg-gray-100 p-6 shadow-md">
           <button
             onClick={onToggle}
-            className="absolute -left-5 top-6 z-50 bg-white shadow rounded-full p-2 hover:scale-105 transition cursor-pointer"
+            className="absolute -left-5 top-6 z-50 cursor-pointer rounded-full bg-white p-2 shadow transition hover:scale-105"
           >
             {expanded ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
 
-          {/* ===== VISTA COLAPSADA ===== */}
           {!expanded && (
-            <div className="flex flex-col h-full gap-3">
-              {/* Header */}
+            <div className="flex h-full flex-col gap-3">
               <div className="shrink-0">
-                <h1 className="text-xl font-bold text-[#EB0029]">Documentos de Salida</h1>
-                <div className="h-[2px] w-full bg-[#EB0029] mt-1" />
+                <h1 className="text-xl font-bold text-[#EB0029]">
+                  Documentos de Salida
+                </h1>
+                <div className="mt-1 h-[2px] w-full bg-[#EB0029]" />
               </div>
 
-              {/* Scroll vertical con todos los docs */}
-              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pr-1">
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
                 {(["ERS", "Análisis", "Arquitectura"] as const).map((t) => (
-                  <div key={t} className="flex flex-col gap-1 shrink-0">
-                    {/* Label */}
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">
+                  <div key={t} className="flex shrink-0 flex-col gap-1">
+                    <span className="px-1 text-xs font-bold uppercase tracking-wider text-gray-500">
                       {DOC_NAMES[t]}
                     </span>
-                    {/* Preview */}
-                    <div className="h-72 bg-white rounded-xl shadow-md overflow-hidden relative border border-gray-100">
-                      <iframe
-                        src={t === "Arquitectura" ? DRAWIO_EMBED_URL : GOOGLE_DOCS_EMBED_URL}
-                        className="border-0"
-                        title={DOC_NAMES[t]}
-                        style={{
-                          pointerEvents: "none",
-                          width: "170%",
-                          height: "170%",
-                          transform: "scale(0.588)",
-                          transformOrigin: "top left",
-                        }}
-                      />
-                      {/* Overlay clicable para expandir */}
+
+                    <div className="relative h-72 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md">
+                      {t === "ERS" ? (
+                        <div
+                          className="pointer-events-none h-full w-full overflow-hidden"
+                          style={{
+                            transform: "scale(0.33)",
+                            transformOrigin: "top left",
+                            width: "303%",
+                            height: "303%",
+                          }}
+                        >
+                          <ERSPreview />
+                        </div>
+                      ) : (
+                        <iframe
+                          src={
+                            t === "Arquitectura"
+                              ? DRAWIO_EMBED_URL
+                              : GOOGLE_DOCS_EMBED_URL
+                          }
+                          className="border-0"
+                          title={DOC_NAMES[t]}
+                          style={{
+                            pointerEvents: "none",
+                            width: "170%",
+                            height: "170%",
+                            transform: "scale(0.588)",
+                            transformOrigin: "top left",
+                          }}
+                        />
+                      )}
+
                       <button
-                        onClick={() => { setTab(t); onToggle(); }}
-                        className="absolute inset-0 w-full h-full bg-transparent hover:bg-[#EB0029]/5 transition group"
+                        onClick={() => {
+                          setTab(t);
+                          onToggle();
+                        }}
+                        className="group absolute inset-0 h-full w-full bg-transparent transition hover:bg-[#EB0029]/5"
                         title="Expandir para ver completo"
                       >
-                        <span className="absolute bottom-2 right-2 bg-[#EB0029] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition">
+                        <span className="absolute bottom-2 right-2 rounded-full bg-[#EB0029] px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
                           Ver completo
                         </span>
                       </button>
@@ -181,20 +200,18 @@ export default function Documentacion({
             </div>
           )}
 
-          {/* ===== VISTA EXPANDIDA ===== */}
           {expanded && (
             <>
-              {/* Tabs + Descargar */}
-              <div className="flex items-center justify-center relative mb-5">
-                <div className="bg-white rounded-full shadow px-2 py-2 flex gap-2">
+              <div className="relative mb-5 flex items-center justify-center">
+                <div className="flex gap-2 rounded-full bg-white px-2 py-2 shadow">
                   {(["ERS", "Análisis", "Arquitectura"] as const).map((t) => (
                     <button
                       key={t}
                       onClick={() => setTab(t)}
                       className={
                         tab === t
-                          ? "px-10 py-2 rounded-full bg-[#EB0029] text-white font-semibold text-sm shadow"
-                          : "px-10 py-2 rounded-full text-gray-600 font-semibold text-sm hover:bg-gray-100 transition"
+                          ? "rounded-full bg-[#EB0029] px-10 py-2 text-sm font-semibold text-white shadow"
+                          : "rounded-full px-10 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
                       }
                     >
                       {t}
@@ -204,23 +221,28 @@ export default function Documentacion({
 
                 <button
                   onClick={handleDownload}
-                  className="absolute right-0 bg-transparent p-2 hover:scale-110 transition flex items-center gap-2 cursor-pointer"
+                  className="absolute right-0 flex cursor-pointer items-center gap-2 bg-transparent p-2 transition hover:scale-110"
                   title="Descargar documento"
                 >
                   <Download className="text-[#EB0029]" size={22} />
-                  <span className="text-[#EB0029] font-medium">Descargar</span>
+                  <span className="font-medium text-[#EB0029]">Descargar</span>
                 </button>
               </div>
 
-              {/* Visor iframe */}
-              <div className="flex-1 min-h-0 bg-white rounded-2xl shadow overflow-hidden">
-                <iframe
-                  key={tab}
-                  src={activeUrl}
-                  className="w-full h-full border-0"
-                  title={tab}
-                  allow="fullscreen"
-                />
+              <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-white shadow">
+                {tab === "ERS" ? (
+                  <div className="h-full w-full overflow-y-auto overscroll-contain bg-[#e9e9e9]">
+                    <ERSPreview />
+                  </div>
+                ) : (
+                  <iframe
+                    key={tab}
+                    src={activeUrl}
+                    className="h-full w-full border-0"
+                    title={tab}
+                    allow="fullscreen"
+                  />
+                )}
               </div>
             </>
           )}
