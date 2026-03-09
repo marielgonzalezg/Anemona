@@ -5,6 +5,11 @@ from database import engine
 from routes.login_route import router as login_router
 from routes.agent_call import router as agent_call
 from routes.datos_proyecto_route import router as datos_proyecto_route
+from dotenv import load_dotenv
+import os
+#IMPORTANTE PARA VARIABLES DE ENTORNO
+load_dotenv()
+
 app = FastAPI()
 
 app.add_middleware(

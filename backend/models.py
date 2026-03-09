@@ -4,7 +4,7 @@ from database import Base
 
 
 class Proyecto(Base):
-    _tablename_ = "proyecto"
+    __tablename__ = "proyecto"
 
     folio = Column(Integer, primary_key=True, index=True)
     fechaCreacion = Column(TIMESTAMP, server_default=func.now())
