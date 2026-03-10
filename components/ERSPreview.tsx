@@ -8,10 +8,21 @@ const showValue = (value: unknown, fallback = "N/A") => {
   return String(value);
 };
 
-export default function ERSPreview({ data }: { data: ERSData | null }) {
+export default function ERSPreview({
+  data,
+  changedFields,
+}: {
+  data: ERSData | null;
+  changedFields?: Set<string>;
+}) {
   if (!data) {
     return <div className="p-8">Cargando documento...</div>;
   }
+
+    const highlight = (path: string) =>
+    changedFields?.has(path)
+      ? "bg-yellow-200 transition-all duration-700"
+      : "";
 
   return (
     <div className="w-full bg-[#ececec] py-8 px-4">
@@ -29,28 +40,45 @@ export default function ERSPreview({ data }: { data: ERSData | null }) {
 
         <table className="mb-1 w-full border-collapse border border-black text-[13px]">
           <tbody>
-            <DocRow label="Solicitante" value={data.DATOS_GENERALES.SOLICITANTE} />
+            <DocRow
+              label="Solicitante"
+              value={data.DATOS_GENERALES.SOLICITANTE}
+              valueClassName={highlight("DATOS_GENERALES.SOLICITANTE")}
+            />
             <DocRow
               label="Información de contacto"
               value={data.DATOS_GENERALES.INFO_CONTACTO}
+              valueClassName={highlight("DATOS_GENERALES.INFO_CONTACTO")}
             />
-            <DocRow label="DGA" value={data.DATOS_GENERALES.DGA} />
+            <DocRow
+              label="DGA"
+              value={data.DATOS_GENERALES.DGA}
+              valueClassName={highlight("DATOS_GENERALES.DGA")}
+            />
             <DocRow
               label="Patrocinador"
               value={data.DATOS_GENERALES.PATROCINADOR}
+              valueClassName={highlight("DATOS_GENERALES.PATROCINADOR")}
             />
-            <DocRow label="CR" value={data.DATOS_GENERALES.CR} />
+            <DocRow
+              label="CR"
+              value={data.DATOS_GENERALES.CR}
+              valueClassName={highlight("DATOS_GENERALES.CR")}
+            />
             <DocRow
               label="Nombre del Socio de Negocio"
               value={data.DATOS_GENERALES.SOCIO}
+              valueClassName={highlight("DATOS_GENERALES.SOCIO")}
             />
             <DocRow
               label="Nombre de la iniciativa"
               value={data.DATOS_GENERALES.NOMBRE_INICIATIVA}
+              valueClassName={highlight("DATOS_GENERALES.NOMBRE_INICIATIVA")}
             />
             <DocRow
               label="Tipo de la iniciativa"
               value={data.DATOS_GENERALES.TIPO_INICIATIVA}
+              valueClassName={highlight("DATOS_GENERALES.TIPO_INICIATIVA")}
             />
           </tbody>
         </table>
@@ -71,7 +99,9 @@ export default function ERSPreview({ data }: { data: ERSData | null }) {
           Descripción General de la Iniciativa
         </div>
 
-        <BodyText className="mb-8 italic text-[#1d5da8]">
+        <BodyText
+          className={`mb-8 italic text-[#1d5da8] ${highlight("DESCRIPCION_INICIATIVA")}`}
+        >
           {showValue(data.DESCRIPCION_INICIATIVA, "")}
         </BodyText>
 
@@ -85,14 +115,18 @@ export default function ERSPreview({ data }: { data: ERSData | null }) {
         <div className="mb-1 font-bold italic text-[#1d5da8] text-[13px]">
           Objetivo
         </div>
-        <BodyText className="mb-6 italic text-[#1d5da8]">
+        <BodyText
+          className={`mb-6 italic text-[#1d5da8] ${highlight("OBJETIVOS_ALCANCE.OBJETIVO")}`}
+        >
           {showValue(data.OBJETIVOS_ALCANCE.OBJETIVO, "")}
         </BodyText>
 
         <div className="mb-1 font-bold italic text-[#1d5da8] text-[13px]">
           Alcance
         </div>
-        <BodyText className="mb-8 italic text-[#1d5da8]">
+        <BodyText
+          className={`mb-8 italic text-[#1d5da8] ${highlight("OBJETIVOS_ALCANCE.ALCANCE")}`}
+        >
           {showValue(data.OBJETIVOS_ALCANCE.ALCANCE, "")}
         </BodyText>
       </Page>
@@ -180,14 +214,17 @@ export default function ERSPreview({ data }: { data: ERSData | null }) {
             <TableInfoRow
               label="Autoridad que solicita la regulación o cambio."
               value={showValue(data.REQUERIMIENTO_REGULATORIO.AUTORIDAD, "Por definir")}
+              valueClassName={highlight("REQUERIMIENTO_REGULATORIO.AUTORIDAD")}
             />
             <TableInfoRow
               label="Fecha de emisión de la regulación por parte de la Autoridad."
               value={showValue(data.REQUERIMIENTO_REGULATORIO.FECHA_EMISION, "NA")}
+              valueClassName={highlight("REQUERIMIENTO_REGULATORIO.AUTORIDAD")}
             />
             <TableInfoRow
               label="Fecha de recepción de la regulación por parte de GFNorte."
               value={showValue(data.REQUERIMIENTO_REGULATORIO.FECHA_RECEPCION, "NA")}
+              valueClassName={highlight("REQUERIMIENTO_REGULATORIO.AUTORIDAD")}
             />
             <TableInfoRow
               label="Fecha de entrada en vigor de la regulación."
@@ -195,10 +232,12 @@ export default function ERSPreview({ data }: { data: ERSData | null }) {
                 data.REQUERIMIENTO_REGULATORIO.FECHA_ENTRADA_VIGOR,
                 "NA"
               )}
+              valueClassName={highlight("REQUERIMIENTO_REGULATORIO.AUTORIDAD")}
             />
             <TableInfoRow
               label="Monto posible de la sanción (Multa)."
               value={showValue(data.REQUERIMIENTO_REGULATORIO.MONTO_SANCION, "0")}
+              valueClassName={highlight("REQUERIMIENTO_REGULATORIO.AUTORIDAD")}
             />
             <TableInfoRow
               label="Aplicativos (sistemas) que se ven impactados"
@@ -206,6 +245,7 @@ export default function ERSPreview({ data }: { data: ERSData | null }) {
                 data.REQUERIMIENTO_REGULATORIO.SISTEMAS_APLICATIVOS,
                 "N/A"
               )}
+              valueClassName={highlight("REQUERIMIENTO_REGULATORIO.AUTORIDAD")}
             />
 
             <tr>
@@ -410,14 +450,18 @@ function FooterBand() {
 function DocRow({
   label,
   value,
+  valueClassName = "",
 }: {
   label: string;
   value: React.ReactNode;
+  valueClassName?: string;
 }) {
   return (
     <tr>
       <td className="w-[220px] border border-black px-2 py-[2px]">{label}</td>
-      <td className="border border-black px-2 py-[2px] italic text-[#1d5da8]">
+      <td
+        className={`border border-black px-2 py-[2px] italic text-[#1d5da8] ${valueClassName}`}
+      >
         {value}
       </td>
     </tr>
@@ -427,18 +471,21 @@ function DocRow({
 function TableInfoRow({
   label,
   value,
+  valueClassName = "",
 }: {
   label: string;
   value: React.ReactNode;
+  valueClassName?: string;
 }) {
   return (
     <tr>
       <td colSpan={2} className="border border-black px-3 py-2">
         {label}
       </td>
+
       <td
         colSpan={2}
-        className="border border-black px-3 py-2 italic text-[#1d5da8]"
+        className={`border border-black px-3 py-2 italic text-[#1d5da8] ${valueClassName}`}
       >
         {value}
       </td>

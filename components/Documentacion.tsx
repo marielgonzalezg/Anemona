@@ -78,17 +78,52 @@ export default function Documentacion({
   const [showPopup, setShowPopup] = useState(false);
   const [ersData, setErsData] = useState<ERSData | null>(null);
   const [loadingERS, setLoadingERS] = useState(true);
+  const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const detectChanges = (oldData: any, newData: any) => {
+      const changed = new Set<string>();
+
+      const compare = (obj1: any, obj2: any, path = "") => {
+        if (Array.isArray(obj2)) {
+          obj2.forEach((item, index) => {
+            const newPath = path ? `${path}.${index}` : `${index}`;
+
+            if (typeof item === "object" && item !== null) {
+              compare(obj1?.[index], item, newPath);
+            } else if (obj1?.[index] !== item) {
+              changed.add(newPath);
+            }
+          });
+          return;
+        }
+
+        for (const key in obj2) {
+          const newPath = path ? `${path}.${key}` : key;
+
+          if (typeof obj2[key] === "object" && obj2[key] !== null) {
+            compare(obj1?.[key], obj2[key], newPath);
+          } else if (obj1?.[key] !== obj2[key]) {
+            changed.add(newPath);
+          }
+        }
+      };
+
+      compare(oldData, newData);
+      return changed;
+    };
+
     const fetchERS = async () => {
       try {
-        setLoadingERS(true);
-
         const response = await fetch("http://127.0.0.1:8000/firestore/bajar", {
           method: "GET",
           headers: {
             accept: "application/json",
           },
+          cache: "no-store",
         });
 
         if (!response.ok) {
@@ -97,20 +132,47 @@ export default function Documentacion({
 
         const json = await response.json();
 
-        if (json.ok && json.data) {
-          setErsData(json.data);
-        } else {
-          throw new Error("La respuesta no contiene data válida");
+        if (isMounted && json.ok && json.data) {
+          setErsData((prev) => {
+            if (!prev) {
+              return json.data;
+            }
+
+            const changes = detectChanges(prev, json.data);
+
+            if (changes.size > 0) {
+              setChangedFields(changes);
+
+              if (timeoutId) clearTimeout(timeoutId);
+              timeoutId = setTimeout(() => {
+                if (isMounted) {
+                  setChangedFields(new Set());
+                }
+              }, 5000);
+
+              return json.data;
+            }
+
+            return prev;
+          });
         }
       } catch (error) {
         console.error("Error cargando ERS:", error);
-        setErsData(null);
       } finally {
-        setLoadingERS(false);
+        if (isMounted) {
+          setLoadingERS(false);
+        }
       }
     };
 
     fetchERS();
+    //const interval = setInterval(fetchERS, 1000);
+
+    return () => {
+      isMounted = false;
+      //clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const wrapperClass = expanded
@@ -194,7 +256,7 @@ const activeUrl = DRAWIO_EMBED_URL;
                               Cargando ERS...
                             </div>
                           ) : (
-                            <ERSPreview data={ersData} />
+                            <ERSPreview data={ersData} changedFields={changedFields} />
                           )}
                         </div>
                       ) : (
@@ -268,7 +330,7 @@ const activeUrl = DRAWIO_EMBED_URL;
                         Cargando documento...
                       </div>
                     ) : (
-                      <ERSPreview data={ersData} />
+                      <ERSPreview data={ersData} changedFields={changedFields} />
                     )}
                   </div>
                 ) : (
