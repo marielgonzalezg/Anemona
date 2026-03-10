@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,15 +9,10 @@ import {
   X,
 } from "lucide-react";
 import ERSPreview from "@/components/ERSPreview";
-
-const GOOGLE_DOCS_EMBED_URL =
-  "https://docs.google.com/document/d/e/2PACX-1vQvz8HDXl68ZXL4cFdI2rMCN0gXou9zODhEGBZI_YAtfkPkRHDZnFJkn1WX9q6vjQ/pub";
+import type { ERSData } from "@/types/  ers";
 
 const DRAWIO_EMBED_URL =
   "https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagramaarq.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1K0pWBSO4_RdxmUlAippvNTiQZfnkcoSJ%26export%3Ddownload";
-
-const GOOGLE_DOCS_DOWNLOAD_URL =
-  "https://docs.google.com/document/d/TU_DOC_ID/export?format=docx";
 
 const DOC_NAMES: Record<"ERS" | "Análisis" | "Arquitectura", string> = {
   ERS: "Documento ERS",
@@ -56,8 +51,8 @@ function DownloadPopup({
             ¡Descarga exitosa!
           </h2>
           <p className="text-sm text-gray-500">
-            <span className="font-semibold text-gray-700">{docName}</span> se
-            ha descargado correctamente.
+            <span className="font-semibold text-gray-700">{docName}</span> se ha
+            descargado correctamente.
           </p>
         </div>
 
@@ -81,19 +76,52 @@ export default function Documentacion({
 }) {
   const [tab, setTab] = useState<"ERS" | "Análisis" | "Arquitectura">("ERS");
   const [showPopup, setShowPopup] = useState(false);
+  const [ersData, setErsData] = useState<ERSData | null>(null);
+  const [loadingERS, setLoadingERS] = useState(true);
+
+  useEffect(() => {
+    const fetchERS = async () => {
+      try {
+        setLoadingERS(true);
+
+        const response = await fetch("http://127.0.0.1:8000/firestore/bajar", {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("No se pudo obtener el ERS");
+        }
+
+        const json = await response.json();
+
+        if (json.ok && json.data) {
+          setErsData(json.data);
+        } else {
+          throw new Error("La respuesta no contiene data válida");
+        }
+      } catch (error) {
+        console.error("Error cargando ERS:", error);
+        setErsData(null);
+      } finally {
+        setLoadingERS(false);
+      }
+    };
+
+    fetchERS();
+  }, []);
 
   const wrapperClass = expanded
     ? "flex-1 h-full min-w-[520px] transition-all duration-300"
     : "w-full max-w-xs h-full transition-all duration-300";
 
-  const activeUrl =
-    tab === "Arquitectura" ? DRAWIO_EMBED_URL : GOOGLE_DOCS_EMBED_URL;
+const activeUrl = DRAWIO_EMBED_URL;
 
   const handleDownload = async () => {
     try {
-      const downloadUrl =
-        tab === "Arquitectura" ? DRAWIO_EMBED_URL : GOOGLE_DOCS_DOWNLOAD_URL;
-
+      const downloadUrl = DRAWIO_EMBED_URL;
       const response = await fetch(downloadUrl);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
@@ -109,7 +137,8 @@ export default function Documentacion({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-    } catch {
+    } catch (error) {
+      console.error("Error al descargar:", error);
     } finally {
       setShowPopup(true);
     }
@@ -150,7 +179,7 @@ export default function Documentacion({
                     </span>
 
                     <div className="relative h-72 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md">
-                      {t === "ERS" ? (
+                      {t === "ERS" || t === "Análisis" ? (
                         <div
                           className="pointer-events-none h-full w-full overflow-hidden"
                           style={{
@@ -160,15 +189,17 @@ export default function Documentacion({
                             height: "303%",
                           }}
                         >
-                          <ERSPreview />
+                          {loadingERS ? (
+                            <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                              Cargando ERS...
+                            </div>
+                          ) : (
+                            <ERSPreview data={ersData} />
+                          )}
                         </div>
                       ) : (
                         <iframe
-                          src={
-                            t === "Arquitectura"
-                              ? DRAWIO_EMBED_URL
-                              : GOOGLE_DOCS_EMBED_URL
-                          }
+                          src={DRAWIO_EMBED_URL}
                           className="border-0"
                           title={DOC_NAMES[t]}
                           style={{
@@ -230,9 +261,15 @@ export default function Documentacion({
               </div>
 
               <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-white shadow">
-                {tab === "ERS" ? (
+                {tab === "ERS" || tab === "Análisis" ? (
                   <div className="h-full w-full overflow-y-auto overscroll-contain bg-[#e9e9e9]">
-                    <ERSPreview />
+                    {loadingERS ? (
+                      <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                        Cargando documento...
+                      </div>
+                    ) : (
+                      <ERSPreview data={ersData} />
+                    )}
                   </div>
                 ) : (
                   <iframe

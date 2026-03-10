@@ -1,7 +1,3 @@
-// definir el tipo (estructura) del JSON que tiene tu ERS, respuestas esperadas
-// sirve para decirle a TypeScript cómo es el objeto
-// VSCode te dé autocompletado, TypeScript detecte errores en el JSON, el componente sepa exactamente qué campos esperar
-
 export interface DatosGenerales {
   SOLICITANTE: string;
   INFO_CONTACTO: string;
@@ -36,5 +32,29 @@ export interface ERSData {
     AREA_PARTICIPANTE: string;
     RESPONSABLE: string;
   };
+  SUPUESTOS: string | null;
+  ANEXOS: string[];
+  RESTRICCIONES: string | null;
   RIESGOS: Riesgo[];
+  REQUERIMIENTO_REGULATORIO: {
+    FECHA_EMISION: string | null;
+    MONTO_SANCION: number;
+    AUTORIDAD: string | null;
+    FECHA_RECEPCION: string | null;
+    FECHA_ENTRADA_VIGOR: string | null;
+    SISTEMAS_APLICATIVOS: string[];
+  };
+  BENEFICIOS: {
+    OTROS_BENEFICIOS: string | null;
+  };
+  PARTICIPACION_OTRAS_AREAS: string | null;
+  EXCLUSIONES: string | null;
+  REQUERIMIENTO_NO_REGULATORIO: {
+    FECHA_LIMITE: string | null;
+    ES_URGENTE: boolean;
+  };
+  REQUERIMIENTO_PERIODICO: {
+    FECHAS_ENTREGA: string[];
+    PERIODICIDAD: string | null;
+  };
 }
