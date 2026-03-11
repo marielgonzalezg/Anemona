@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Home, File as FileIcon } from "lucide-react";
 
 export default function ProjectList() {
@@ -17,6 +19,26 @@ export default function ProjectList() {
   ];
 
   const [selectedId, setSelectedId] = useState<number | null>(1);
+  const [userName, setUserName] = useState<string>("Usuario");
+
+  useEffect(() => {
+  const loadUser = () => {
+    const savedUser = sessionStorage.getItem("chat_user_id");
+    setUserName(savedUser || "Usuario");
+  };
+
+  const handleUserUpdate = (event: Event) => {
+    const customEvent = event as CustomEvent<{ userId: string }>;
+    setUserName(customEvent.detail?.userId || "Usuario");
+  };
+
+  loadUser();
+  window.addEventListener("chat-user-updated", handleUserUpdate);
+
+  return () => {
+    window.removeEventListener("chat-user-updated", handleUserUpdate);
+  };
+}, []);
 
   return (
     <div className="w-full max-w-xs h-full flex flex-col relative">
@@ -47,7 +69,9 @@ export default function ProjectList() {
           </svg>
         </div>
 
-        <p className="text-xl font-bold text-gray-700">Santiago C.</p>
+        <p className="text-xl font-bold text-gray-700">
+  {userName.split("_")[0]}
+</p>
       </div>
 
       {/* LISTA CON SCROLL */}

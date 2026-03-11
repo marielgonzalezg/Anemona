@@ -39,49 +39,49 @@ export default function ChatBot() {
   }, [messages]);
 
   useEffect(() => {
-  const savedMessages = localStorage.getItem(CHAT_MESSAGES_KEY);
-  const savedInput = localStorage.getItem(CHAT_INPUT_KEY);
+    const savedMessages = localStorage.getItem(CHAT_MESSAGES_KEY);
+    const savedInput = localStorage.getItem(CHAT_INPUT_KEY);
 
-  if (savedMessages) {
-    try {
-      setMessages(JSON.parse(savedMessages));
-    } catch (error) {
-      console.error("No se pudo cargar el chat guardado:", error);
+    if (savedMessages) {
+      try {
+        setMessages(JSON.parse(savedMessages));
+      } catch (error) {
+        console.error("No se pudo cargar el chat guardado:", error);
+      }
     }
-  }
 
-  if (savedInput) {
-    setInput(savedInput);
-  }
+    if (savedInput) {
+      setInput(savedInput);
+    }
 
-  setLocalChatReady(true);
-}, []);
+    setLocalChatReady(true);
+  }, []);
 
   useEffect(() => {
-  if (!localChatReady) return;
-  localStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(messages));
-}, [messages, localChatReady]);
+    if (!localChatReady) return;
+    localStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(messages));
+  }, [messages, localChatReady]);
 
-useEffect(() => {
-  if (userId && sessionId && !showLoginModal) {
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  }
-}, [userId, sessionId, showLoginModal]);
+  useEffect(() => {
+    if (userId && sessionId && !showLoginModal) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+    }
+  }, [userId, sessionId, showLoginModal]);
 
-useEffect(() => {
-  if (!localChatReady) return;
-  localStorage.setItem(CHAT_INPUT_KEY, input);
-}, [input, localChatReady]);
+  useEffect(() => {
+    if (!localChatReady) return;
+    localStorage.setItem(CHAT_INPUT_KEY, input);
+  }, [input, localChatReady]);
 
-useEffect(() => {
-  if (!loadingMessage && userId && sessionId && !showLoginModal) {
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  }
-}, [loadingMessage, userId, sessionId, showLoginModal]);
+  useEffect(() => {
+    if (!loadingMessage && userId && sessionId && !showLoginModal) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+    }
+  }, [loadingMessage, userId, sessionId, showLoginModal]);
 
   useEffect(() => {
     const savedUserId = sessionStorage.getItem("chat_user_id");
@@ -126,6 +126,12 @@ useEffect(() => {
       sessionStorage.setItem("chat_user_id", data.user_id);
       sessionStorage.setItem("chat_session_id", data.session_id);
 
+      window.dispatchEvent(
+        new CustomEvent("chat-user-updated", {
+          detail: { userId: data.user_id },
+        })
+      );
+
       setShowLoginModal(false);
 
       setMessages((prev) => [
@@ -145,76 +151,77 @@ useEffect(() => {
   }
 
   async function send() {
-  const text = input.trim();
-  if (!text || !userId || !sessionId || loadingMessage) return;
+    const text = input.trim();
+    if (!text || !userId || !sessionId || loadingMessage) return;
 
-  const userMsg: Msg = {
-    id: Date.now(),
-    role: "user",
-    text,
-  };
+    const userMsg: Msg = {
+      id: Date.now(),
+      role: "user",
+      text,
+    };
 
-  setMessages((prev) => [...prev, userMsg]);
-  setInput("");
-  setTimeout(() => {
-  inputRef.current?.focus();});
-  setLoadingMessage(true);
-
-  try {
-    const res = await fetch("http://127.0.0.1:8000/agent/query", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        session_id: sessionId,
-        message: text,
-      }),
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setTimeout(() => {
+      inputRef.current?.focus();
     });
+    setLoadingMessage(true);
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
-      throw new Error(errorData?.detail || "Error al enviar el mensaje.");
+    try {
+      const res = await fetch("http://127.0.0.1:8000/agent/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          session_id: sessionId,
+          message: text,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.detail || "Error al enviar el mensaje.");
+      }
+
+      const data = await res.json();
+
+      const botText =
+        data.content ||
+        data.response ||
+        data.answer ||
+        data.message ||
+        data.bot_response ||
+        "No recibí respuesta del bot.";
+
+      const botMsg: Msg = {
+        id: Date.now() + 1,
+        role: "bot",
+        text: botText,
+      };
+
+      setMessages((prev) => [...prev, botMsg]);
+      window.dispatchEvent(new CustomEvent("ers-refresh"));
+
+    } catch (error) {
+      console.error(error);
+
+      const errorMsg: Msg = {
+        id: Date.now() + 1,
+        role: "bot",
+        text:
+          error instanceof Error
+            ? `Ocurrió un error: ${error.message}`
+            : "Ocurrió un error al consultar el bot.",
+      };
+
+      setMessages((prev) => [...prev, errorMsg]);
+      window.dispatchEvent(new CustomEvent("ers-refresh"));
+    } finally {
+      setLoadingMessage(false);
     }
-
-    const data = await res.json();
-
-    const botText =
-      data.content ||
-      data.response ||
-      data.answer ||
-      data.message ||
-      data.bot_response ||
-      "No recibí respuesta del bot.";
-
-    const botMsg: Msg = {
-      id: Date.now() + 1,
-      role: "bot",
-      text: botText,
-    };
-
-    setMessages((prev) => [...prev, botMsg]);
-    window.dispatchEvent(new CustomEvent("ers-refresh"));
-
-  } catch (error) {
-    console.error(error);
-
-    const errorMsg: Msg = {
-      id: Date.now() + 1,
-      role: "bot",
-      text:
-        error instanceof Error
-          ? `Ocurrió un error: ${error.message}`
-          : "Ocurrió un error al consultar el bot.",
-    };
-
-    setMessages((prev) => [...prev, errorMsg]);
-    window.dispatchEvent(new CustomEvent("ers-refresh"));
-  } finally {
-    setLoadingMessage(false);
   }
-}
 
   function resetSession() {
     sessionStorage.removeItem("chat_user_id");
@@ -232,6 +239,12 @@ useEffect(() => {
       { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
     ]);
     setInput("");
+
+    window.dispatchEvent(
+      new CustomEvent("chat-user-updated", {
+        detail: { userId: "" },
+      })
+    );
   }
 
   return (
@@ -338,7 +351,7 @@ useEffect(() => {
               <SendHorizonal className="text-black" size={18} />
             </button>
           </div>
-        {/*
+          {/*
           <div className="relative">
             <button
               onClick={() => setIsWidgetsOpen(!isWidgetsOpen)}
@@ -358,7 +371,7 @@ useEffect(() => {
         </div>
       
       */}
-      </div>
+        </div>
       </div>
 
       {/* Modal login provisional */}
