@@ -28,10 +28,60 @@ export default function ChatBot() {
   const [loadingMessage, setLoadingMessage] = useState(false);
 
   const endRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [localChatReady, setLocalChatReady] = useState(false);
+
+  const CHAT_MESSAGES_KEY = "agent-chat-messages";
+  const CHAT_INPUT_KEY = "agent-chat-input";
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+  const savedMessages = localStorage.getItem(CHAT_MESSAGES_KEY);
+  const savedInput = localStorage.getItem(CHAT_INPUT_KEY);
+
+  if (savedMessages) {
+    try {
+      setMessages(JSON.parse(savedMessages));
+    } catch (error) {
+      console.error("No se pudo cargar el chat guardado:", error);
+    }
+  }
+
+  if (savedInput) {
+    setInput(savedInput);
+  }
+
+  setLocalChatReady(true);
+}, []);
+
+  useEffect(() => {
+  if (!localChatReady) return;
+  localStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(messages));
+}, [messages, localChatReady]);
+
+useEffect(() => {
+  if (userId && sessionId && !showLoginModal) {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  }
+}, [userId, sessionId, showLoginModal]);
+
+useEffect(() => {
+  if (!localChatReady) return;
+  localStorage.setItem(CHAT_INPUT_KEY, input);
+}, [input, localChatReady]);
+
+useEffect(() => {
+  if (!loadingMessage && userId && sessionId && !showLoginModal) {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  }
+}, [loadingMessage, userId, sessionId, showLoginModal]);
 
   useEffect(() => {
     const savedUserId = sessionStorage.getItem("chat_user_id");
@@ -106,6 +156,8 @@ export default function ChatBot() {
 
   setMessages((prev) => [...prev, userMsg]);
   setInput("");
+  setTimeout(() => {
+  inputRef.current?.focus();});
   setLoadingMessage(true);
 
   try {
@@ -143,6 +195,8 @@ export default function ChatBot() {
     };
 
     setMessages((prev) => [...prev, botMsg]);
+    window.dispatchEvent(new CustomEvent("ers-refresh"));
+
   } catch (error) {
     console.error(error);
 
@@ -156,6 +210,7 @@ export default function ChatBot() {
     };
 
     setMessages((prev) => [...prev, errorMsg]);
+    window.dispatchEvent(new CustomEvent("ers-refresh"));
   } finally {
     setLoadingMessage(false);
   }
@@ -165,6 +220,9 @@ export default function ChatBot() {
     sessionStorage.removeItem("chat_user_id");
     sessionStorage.removeItem("chat_session_id");
 
+    localStorage.removeItem(CHAT_MESSAGES_KEY);
+    localStorage.removeItem(CHAT_INPUT_KEY);
+
     setUserId("");
     setSessionId("");
     setTempUserId("");
@@ -173,6 +231,7 @@ export default function ChatBot() {
     setMessages([
       { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
     ]);
+    setInput("");
   }
 
   return (
@@ -252,17 +311,21 @@ export default function ChatBot() {
         <div className="mt-5 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <input
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") send();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  send();
+                }
               }}
               placeholder={
                 userId && sessionId
                   ? "Escribe tu pregunta..."
                   : "Primero inicia sesión"
               }
-              disabled={!userId || !sessionId || loadingMessage}
+              disabled={!userId || !sessionId}
               className="w-full rounded-2xl bg-white px-5 pr-14 py-4 text-sm shadow outline-none focus:ring-2 focus:ring-[#EB0029]/30 disabled:bg-gray-200 disabled:cursor-not-allowed"
             />
 
@@ -320,7 +383,10 @@ export default function ChatBot() {
               value={tempUserId}
               onChange={(e) => setTempUserId(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") createSession();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  createSession();
+                }
               }}
               placeholder="Ej. dario_123"
               className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#EB0029]/30"

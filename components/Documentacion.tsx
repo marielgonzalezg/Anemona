@@ -80,100 +80,179 @@ export default function Documentacion({
   const [loadingERS, setLoadingERS] = useState(true);
   const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const detectChanges = (oldData: any, newData: any) => {
+  const changed = new Set<string>();
 
-    const detectChanges = (oldData: any, newData: any) => {
-      const changed = new Set<string>();
+  const compare = (obj1: any, obj2: any, path = "") => {
+    if (Array.isArray(obj2)) {
+      obj2.forEach((item, index) => {
+        const newPath = path ? `${path}.${index}` : `${index}`;
 
-      const compare = (obj1: any, obj2: any, path = "") => {
-        if (Array.isArray(obj2)) {
-          obj2.forEach((item, index) => {
-            const newPath = path ? `${path}.${index}` : `${index}`;
+        if (typeof item === "object" && item !== null) {
+          compare(obj1?.[index], item, newPath);
+        } else if (obj1?.[index] !== item) {
+          changed.add(newPath);
+        }
+      });
+      return;
+    }
 
-            if (typeof item === "object" && item !== null) {
-              compare(obj1?.[index], item, newPath);
-            } else if (obj1?.[index] !== item) {
-              changed.add(newPath);
-            }
-          });
-          return;
+    for (const key in obj2) {
+      const newPath = path ? `${path}.${key}` : key;
+
+      if (typeof obj2[key] === "object" && obj2[key] !== null) {
+        compare(obj1?.[key], obj2[key], newPath);
+      } else if (obj1?.[key] !== obj2[key]) {
+        changed.add(newPath);
+      }
+    }
+  };
+
+  compare(oldData, newData);
+  return changed;
+};
+
+const fetchERS = async (
+  isMounted = true,
+  timeoutRef?: { current: ReturnType<typeof setTimeout> | null }
+) => {
+  try {
+    const response = await fetch("http://127.0.0.1:8000/firestore/bajar", {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudo obtener el ERS");
+    }
+
+    const json = await response.json();
+
+    if (isMounted && json.ok && json.data) {
+      setErsData((prev) => {
+        if (!prev) return json.data;
+
+        const changes = detectChanges(prev, json.data);
+
+        if (changes.size > 0) {
+          setChangedFields(changes);
+
+          if (timeoutRef?.current) clearTimeout(timeoutRef.current);
+          timeoutRef && (timeoutRef.current = setTimeout(() => {
+            setChangedFields(new Set());
+          }, 5000));
+
+          return json.data;
         }
 
-        for (const key in obj2) {
-          const newPath = path ? `${path}.${key}` : key;
+        return prev;
+      });
+    }
+  } catch (error) {
+    console.error("Error cargando ERS:", error);
+  } finally {
+    if (isMounted) {
+      setLoadingERS(false);
+    }
+  }
+};
 
-          if (typeof obj2[key] === "object" && obj2[key] !== null) {
-            compare(obj1?.[key], obj2[key], newPath);
-          } else if (obj1?.[key] !== obj2[key]) {
+  useEffect(() => {
+  let isMounted = true;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const detectChanges = (oldData: any, newData: any) => {
+    const changed = new Set<string>();
+
+    const compare = (obj1: any, obj2: any, path = "") => {
+      if (Array.isArray(obj2)) {
+        obj2.forEach((item, index) => {
+          const newPath = path ? `${path}.${index}` : `${index}`;
+
+          if (typeof item === "object" && item !== null) {
+            compare(obj1?.[index], item, newPath);
+          } else if (obj1?.[index] !== item) {
             changed.add(newPath);
           }
-        }
-      };
-
-      compare(oldData, newData);
-      return changed;
-    };
-
-    const fetchERS = async () => {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/firestore/bajar", {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-          },
-          cache: "no-store",
         });
+        return;
+      }
 
-        if (!response.ok) {
-          throw new Error("No se pudo obtener el ERS");
-        }
+      for (const key in obj2) {
+        const newPath = path ? `${path}.${key}` : key;
 
-        const json = await response.json();
-
-        if (isMounted && json.ok && json.data) {
-          setErsData((prev) => {
-            if (!prev) {
-              return json.data;
-            }
-
-            const changes = detectChanges(prev, json.data);
-
-            if (changes.size > 0) {
-              setChangedFields(changes);
-
-              if (timeoutId) clearTimeout(timeoutId);
-              timeoutId = setTimeout(() => {
-                if (isMounted) {
-                  setChangedFields(new Set());
-                }
-              }, 5000);
-
-              return json.data;
-            }
-
-            return prev;
-          });
-        }
-      } catch (error) {
-        console.error("Error cargando ERS:", error);
-      } finally {
-        if (isMounted) {
-          setLoadingERS(false);
+        if (typeof obj2[key] === "object" && obj2[key] !== null) {
+          compare(obj1?.[key], obj2[key], newPath);
+        } else if (obj1?.[key] !== obj2[key]) {
+          changed.add(newPath);
         }
       }
     };
 
-    fetchERS();
-    //const interval = setInterval(fetchERS, 1000);
+    compare(oldData, newData);
+    return changed;
+  };
 
-    return () => {
-      isMounted = false;
-      //clearInterval(interval);
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, []);
+  const fetchERS = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/firestore/bajar", {
+        method: "GET",
+        headers: { accept: "application/json" },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo obtener el ERS");
+      }
+
+      const json = await response.json();
+
+      if (isMounted && json.ok && json.data) {
+        setErsData((prev) => {
+          if (!prev) return json.data;
+
+          const changes = detectChanges(prev, json.data);
+
+          if (changes.size > 0) {
+            setChangedFields(changes);
+
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+              if (isMounted) setChangedFields(new Set());
+            }, 5000);
+
+            return json.data;
+          }
+
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error("Error cargando ERS:", error);
+    } finally {
+      if (isMounted) setLoadingERS(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchERS();
+  };
+
+  // primera carga
+  fetchERS();
+
+  // escuchar evento del chat
+  window.addEventListener("ers-refresh", handleRefresh);
+
+  return () => {
+    isMounted = false;
+    window.removeEventListener("ers-refresh", handleRefresh);
+    if (timeoutId) clearTimeout(timeoutId);
+  };
+}, []);
 
   const wrapperClass = expanded
     ? "flex-1 h-full min-w-[520px] transition-all duration-300"
