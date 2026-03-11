@@ -275,7 +275,7 @@ export default function ChatBot() {
               <SendHorizonal className="text-black" size={18} />
             </button>
           </div>
-
+        {/*
           <div className="relative">
             <button
               onClick={() => setIsWidgetsOpen(!isWidgetsOpen)}
@@ -284,6 +284,8 @@ export default function ChatBot() {
               <LayoutGrid size={18} />
               Widgets
             </button>
+          
+        
 
             <WidgetsModal
               isOpen={isWidgetsOpen}
@@ -291,6 +293,9 @@ export default function ChatBot() {
             />
           </div>
         </div>
+      
+      */}
+      </div>
       </div>
 
       {/* Modal login provisional */}
