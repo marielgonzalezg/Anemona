@@ -1,7 +1,7 @@
 "use client";
 
 import { X, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   isOpen: boolean;
@@ -24,6 +24,11 @@ type FormDataType = {
   tipo: string;
 };
 
+type Departamento = {
+  iddepartamento: number;
+  nombre: string;
+};
+
 export default function FormModal({
   isOpen,
   tempUserId,
@@ -44,11 +49,56 @@ export default function FormModal({
     tipo: "",
   });
 
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [loadingDepartamentos, setLoadingDepartamentos] = useState(false);
+  const [openDep, setOpenDep] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    async function fetchDepartamentos() {
+      try {
+        setLoadingDepartamentos(true);
+
+        const res = await fetch("http://127.0.0.1:8000/departamentos");
+
+        if (!res.ok) {
+          throw new Error("No se pudieron cargar los departamentos");
+        }
+
+        const data = await res.json();
+        setDepartamentos(data);
+      } catch (error) {
+        console.error("Error cargando departamentos:", error);
+      } finally {
+        setLoadingDepartamentos(false);
+      }
+    }
+
+    if (isOpen) {
+      fetchDepartamentos();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpenDep(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const fields: {
     label: string;
     key: keyof FormDataType;
     placeholder: string;
-    isSelect?: boolean;
   }[] = [
     {
       label: "Solicitante",
@@ -85,12 +135,6 @@ export default function FormModal({
       key: "iniciativa",
       placeholder: "0",
     },
-    {
-      label: "Departamentos impactados",
-      key: "departamentos",
-      placeholder: "",
-      isSelect: true,
-    },
   ];
 
   const isFormValid = Object.values(formData).every(
@@ -110,7 +154,15 @@ export default function FormModal({
 
   function handleSubmit() {
     setTempUserId(formData.solicitante);
+    console.log("Formulario:", formData);
     onSubmit();
+  }
+
+  function getDepartamentoSeleccionado() {
+    const dep = departamentos.find(
+      (d) => String(d.iddepartamento) === formData.departamentos
+    );
+    return dep?.nombre || "";
   }
 
   if (!isOpen) return null;
@@ -158,25 +210,76 @@ export default function FormModal({
                 </label>
 
                 <div className="w-[70%]">
-                  <div className="bg-gray-100 px-4 pt-3 pb-2 flex items-center justify-between">
+                  <div className="bg-gray-100 px-4 pt-3 pb-2">
                     <input
                       value={formData[field.key]}
                       onChange={(e) => handleChange(field.key, e.target.value)}
-                      className="w-full bg-transparent outline-none text-sm text-[#5B6670]"
+                      className="w-full bg-transparent outline-none text-sm text-[#5B6670] placeholder:text-[#b5bcc2]"
                       placeholder={field.placeholder}
                     />
-
-                    {field.isSelect && (
-                      <ChevronDown
-                        size={20}
-                        className="text-black ml-2 shrink-0"
-                      />
-                    )}
                   </div>
                   <div className="h-[1px] bg-[#5B6670] mt-[1px] w-full" />
                 </div>
               </div>
             ))}
+
+            <div>
+              <label className="block text-sm font-bold text-[#323E48] mb-2">
+                Departamentos impactados
+              </label>
+
+              <div className="w-[70%] relative" ref={dropdownRef}>
+                <div className="bg-gray-100 px-4 pt-3 pb-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#5B6670] min-h-[24px] flex items-center">
+                      {getDepartamentoSeleccionado() ||
+                        (loadingDepartamentos
+                          ? "Cargando departamentos..."
+                          : "")}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setOpenDep((prev) => !prev)}
+                      className="ml-3 shrink-0 text-[#5B6670] hover:text-black"
+                    >
+                      <ChevronDown
+                        size={22}
+                        className={`transition-transform duration-200 ${
+                          openDep ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="h-[1px] bg-[#5B6670] mt-[1px] w-full" />
+
+                {openDep && (
+                  <div className="absolute left-0 top-[calc(100%+8px)] w-full bg-gray-100 rounded-md py-3 shadow-md max-h-40 overflow-y-auto z-50">
+                    {departamentos.length === 0 && !loadingDepartamentos ? (
+                      <div className="px-4 py-2 text-sm text-[#5B6670]">
+                        No hay departamentos disponibles
+                      </div>
+                    ) : (
+                      departamentos.map((dep) => (
+                        <button
+                          type="button"
+                          key={dep.iddepartamento}
+                          onClick={() => {
+                            handleChange("departamentos", String(dep.iddepartamento));
+                            setOpenDep(false);
+                          }}
+                          className="w-full text-left px-4 py-[7px] text-sm text-[#5B6670] hover:bg-gray-200 transition"
+                        >
+                          {dep.nombre}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="mt-10">
@@ -189,7 +292,7 @@ export default function FormModal({
                 <input
                   value={formData.tipo}
                   onChange={(e) => handleChange("tipo", e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm text-[#5B6670]"
+                  className="w-full bg-transparent outline-none text-sm text-[#5B6670] placeholder:text-[#b5bcc2]"
                   placeholder="<Prueba de Concepto, Idea, Mantenimiento, Proyecto>"
                 />
               </div>
@@ -220,3 +323,21 @@ export default function FormModal({
     </div>
   );
 }
+
+
+ {/* COMO AGREGAR MODAL
+
+  ya al final, antes de cerrar el section y agregar arriba el import:
+  import FormModal from "@/components/FormModal";
+
+ <FormModal
+  isOpen={showLoginModal}
+  tempUserId={tempUserId}
+  setTempUserId={setTempUserId}
+  loadingSession={loadingSession}
+  onClose={() => setShowLoginModal(false)}
+  onSubmit={createSession}
+/>
+    </section>
+
+    */}
