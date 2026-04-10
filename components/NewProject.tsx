@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Home, FileText, File as FileIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Project = {
     id: number;
@@ -17,6 +18,7 @@ type NewProjectProps = {
 export default function NewProject({ onEnterDashboard }: NewProjectProps) {
     const [userName, setUserName] = useState("José T.");
     const [selectedId, setSelectedId] = useState<number | null>(1);
+    const router = useRouter();
 
     const [projects] = useState<Project[]>([
         { id: 1, code: "SV-3254320326", title: "Proyecto 1", date: "23/03/2026" },
@@ -113,12 +115,15 @@ export default function NewProject({ onEnterDashboard }: NewProjectProps) {
                     })}
                 </div>
 
-                {/* BOTON FIJO */}
-                <div className="flex justify-center py-7">
-                    <button className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition">
-                        Ver Todos
-                    </button>
-                </div>
+                {/* BOTON */}
+            <div className="flex justify-center py-7">
+            <button
+                onClick={() => router.push("/proyectos-dashboard")}
+                className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
+            >
+                Ver Todos
+            </button>
+            </div>
 
                 {/* LOGO */}
                 <div className="mt-auto pt-1 left-0 w-full flex justify-center">

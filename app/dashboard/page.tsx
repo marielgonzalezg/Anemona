@@ -28,7 +28,7 @@ export default function Dashboard() {
 
       {currentScreen === "dashboard" && (
         <>
-          <ProjectList onGoHome={() => setCurrentScreen("home")} />
+          <ProjectList />
           {!expandDocs && <ChatBot />}
 
           <Documentacion

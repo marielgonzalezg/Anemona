@@ -13,10 +13,28 @@ interface Proyecto {
 }
 
 export default function ProyectosDashboard() {
-  const userId = sessionStorage.getItem("chat_user_id");
+  
+  const [idusuario, setIdUsuario] = useState<string | null>(() => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("idusuario")?.trim() || null;
+});
+
+const [nombre, setNombre] = useState<string | null>(() => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("nombre");
+});
+
+const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("apellidopaterno");
+});
+
+
+
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Usuario");
+  const router = useRouter();
 
   // Filtros
   const [filtroFolio, setFiltroFolio] = useState("");
@@ -24,46 +42,44 @@ export default function ProyectosDashboard() {
   const [filtroFecha, setFiltroFecha] = useState("");
   const [filtroArea, setFiltroArea] = useState("");
 
-  useEffect(() => {
-    const loadUser = () => {
-      const savedUser = sessionStorage.getItem("chat_user_id");
-      setUserName(savedUser || "Usuario");
-    };
+  const limpiarFiltros = () => {
+  setFiltroFolio("");
+  setFiltroNombre("");
+  setFiltroFecha("");
+  setFiltroArea("");
+};
+
 
     const handleUserUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<{ userId: string }>;
-      setUserName(customEvent.detail?.userId || "Usuario");
+      const customEvent = event as CustomEvent<{ idusuario: string }>;
+      setUserName(customEvent.detail?.idusuario || "Usuario");
     };
 
-    loadUser();
-    window.addEventListener("chat-user-updated", handleUserUpdate);
-    return () => window.removeEventListener("chat-user-updated", handleUserUpdate);
-  }, []);
 
   useEffect(() => {
-    const fetchProyectos = async () => {
-      try {
-        const res = await fetch(
-        `http://127.0.0.1:8000/usuarios/${userId}/proyectos`,
-        {
-          headers: { accept: "application/json" },
-          cache: "no-store",
-        }
+  if (!idusuario) return;
+
+  setLoading(true);
+
+  const fetchProyectos = async () => {
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos`
       );
 
-        if (!res.ok) throw new Error("Error al obtener proyectos");
+      const data = await res.json();
+      console.log("DATA:", data);
 
-        const data = await res.json();
-        setProyectos(data);
-      } catch (error) {
-        console.error("Error cargando proyectos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setProyectos(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProyectos();
-  }, []);
+  fetchProyectos();
+}, [idusuario]);
 
   const formatDate = (isoDate: string) => {
     if (!isoDate) return "";
@@ -89,38 +105,42 @@ export default function ProyectosDashboard() {
     <div className="flex h-screen w-full bg-gray-100">
 
       {/* ── SIDEBAR ── */}
-      <aside className="flex h-full w-72 flex-shrink-0 flex-col gap-4 bg-white px-5 py-6 shadow-sm">
+      <aside className="flex h-full w-90 flex-shrink-0 flex-col bg-white px-5 py-6 shadow-sm">
+       
 
         {/* Header */}
         <div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-5">
             <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
             <Home
-              size={28}
-              className="cursor-pointer rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-[#EB0029]"
-            />
+            size={30}
+            onClick={() => router.push("/")}
+            className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
+          />
           </div>
           <div className="mt-1 h-[2px] w-full bg-[#EB0029]" />
         </div>
 
-        {/* Avatar */}
-        <div className="flex flex-col items-center py-2">
-          <div className="mb-2 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gray-100 shadow">
-            <svg viewBox="0 0 100 100" className="h-full w-full">
-              <circle cx="50" cy="50" r="50" fill="#e8e8e8" />
-              <ellipse cx="50" cy="85" rx="28" ry="20" fill="#2c3e6b" />
-              <rect x="43" y="65" width="14" height="15" rx="2" fill="white" />
-              <polygon points="50,67 47,72 50,85 53,72" fill="#EB0029" />
-              <ellipse cx="50" cy="40" rx="18" ry="20" fill="#f5c9a0" />
-              <ellipse cx="50" cy="24" rx="18" ry="10" fill="#2c3e6b" />
-              <rect x="32" y="24" width="36" height="8" fill="#2c3e6b" />
-            </svg>
-          </div>
-          <p className="text-lg font-bold text-gray-700">{userName.split("_")[0]}</p>
+        {/* PERFIL */}
+      <div className="flex flex-col items-center my-6 pt-10">
+        <div className="w-28 h-28 rounded-full bg-gray-100 shadow-md flex items-center justify-center overflow-hidden mb-3">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
+            <circle cx="50" cy="50" r="50" fill="#e8e8e8" />
+            <ellipse cx="50" cy="85" rx="28" ry="20" fill="#2c3e6b" />
+            <rect x="43" y="65" width="14" height="15" rx="2" fill="white" />
+            <polygon points="50,67 47,72 50,85 53,72" fill="#EB0029" />
+            <ellipse cx="50" cy="40" rx="18" ry="20" fill="#f5c9a0" />
+            <ellipse cx="50" cy="24" rx="18" ry="10" fill="#2c3e6b" />
+            <rect x="32" y="24" width="36" height="8" fill="#2c3e6b" />
+          </svg>
+        </div>
+          <p className="text-xl font-bold text-gray-700 pb-5">
+          {`${nombre?.split("_")[0] || ""} ${apellidopaterno || ""}`}
+        </p>
         </div>
 
         {/* Filtros */}
-        <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
+        <div className="flex items-center gap-2 text-sm font-semibold text-gray-500 py-5">
           <Filter size={14} />
           Filtrar
         </div>
@@ -171,6 +191,13 @@ export default function ProyectosDashboard() {
             />
           </div>
         </div>
+
+        <button
+        onClick={limpiarFiltros}
+        className="bg-[#EB0029] text-white font-semibold text-xs px-3 py-2 rounded-md hover:bg-red-700 transition mt-10"
+      >
+        Limpiar
+      </button>
 
         {/* Logo */}
         <div className="mt-auto flex justify-center pt-4">

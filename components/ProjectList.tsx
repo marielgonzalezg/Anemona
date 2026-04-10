@@ -3,16 +3,10 @@
 import { useEffect, useState } from "react";
 import { Home, File as FileIcon } from "lucide-react";
 import Link from "next/link";
-
 import { useRouter } from "next/navigation";
 
 
-
-type ProjectListProps = {
-  onGoHome: () => void;
-};
-
-export default function ProjectList({ onGoHome }: ProjectListProps) {
+export default function ProjectList() {
  const router = useRouter();
 
   const projects = [
@@ -51,7 +45,7 @@ export default function ProjectList({ onGoHome }: ProjectListProps) {
 }, []);
 
   return (
-    <div className="w-full max-w-xs h-full flex flex-col relative">
+    <div className="w-full max-w-xs h-full flex flex-col bg-white px-5 py-6 shadow-sm">
 
       {/* HEADER */}
       <div className="mb-4">
@@ -59,7 +53,7 @@ export default function ProjectList({ onGoHome }: ProjectListProps) {
           <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
           <Home
             size={30}
-            onClick={onGoHome}
+            onClick={() => router.push("/")}
             className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
           />
         </div>
@@ -122,12 +116,7 @@ export default function ProjectList({ onGoHome }: ProjectListProps) {
 </div>
 
 {/* BOTON */}
-{/* BOTON */}
 <div className="flex justify-center py-7">
-  <button
-    onClick={() => router.push("/proyectos-dashboard")}
-    className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
-  >
   <button
     onClick={() => router.push("/proyectos-dashboard")}
     className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
