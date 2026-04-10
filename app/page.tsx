@@ -1,26 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import ProjectList from "@/components/ProjectList";
-import ChatBot from "@/components/ChatBot";
-import Documentacion from "@/components/Documentacion";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import LoginScreen from "@/components/LogIn";
 
-export default function Home() {
 
-  const [expandDocs, setExpandDocs] = useState(false);
+export default function Page() {
+  const router = useRouter();
 
-  return (
-    <main className="flex items-stretch gap-6 p-10 w-full h-screen overflow-hidden">
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-      <ProjectList />
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, []);
 
-      {!expandDocs && <ChatBot />}
-
-      <Documentacion
-        expanded={expandDocs}
-        onToggle={() => setExpandDocs(!expandDocs)}
-      />
-
-    </main>
-  );
+  return <LoginScreen />;
 }
