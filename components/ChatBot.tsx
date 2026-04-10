@@ -3,6 +3,7 @@
 import { LayoutGrid, SendHorizonal, Bot, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import WidgetsModal from "@/components/WidgetsModal";
+import FormModal from "./FormModal";
 
 type Msg = {
   id: number;
@@ -96,6 +97,31 @@ export default function ChatBot() {
     }
   }, []);
 
+  function handleProjectCreated() {
+  const savedUserId = sessionStorage.getItem("chat_user_id");
+  const savedSessionId = sessionStorage.getItem("chat_session_id");
+
+  console.log("🟡 session_id:", sessionStorage.getItem("chat_session_id"));
+  console.log("🟡 user_id:", sessionStorage.getItem("chat_user_id"));
+
+  if (savedUserId && savedSessionId) {
+    setUserId(savedUserId);
+    setSessionId(savedSessionId);
+    setTempUserId(savedUserId);
+  }
+
+  setShowLoginModal(false);
+
+  setMessages((prev) => [
+    ...prev,
+    {
+      id: Date.now(),
+      role: "bot",
+      text: "Proyecto y sesión creados correctamente. Ya puedes comenzar a chatear.",
+    },
+  ]);
+}
+
   async function createSession() {
     const cleanUserId = tempUserId.trim();
     if (!cleanUserId) return;
@@ -167,23 +193,37 @@ export default function ChatBot() {
     });
     setLoadingMessage(true);
 
+    const requestBody = {
+      user_id: String(userId),
+      session_id: String(sessionId),
+      message: text,
+    };
+
+    console.log("📤 BODY REAL DE /agent/query:");
+    console.log(JSON.stringify(requestBody, null, 2));
+
     try {
       const res = await fetch("http://127.0.0.1:8000/agent/query", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          user_id: userId,
-          session_id: sessionId,
-          message: text,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.detail || "Error al enviar el mensaje.");
-      }
+  const errorData = await res.json().catch(() => null);
+
+  console.log("❌ ERROR COMPLETO DE /agent/query:");
+  console.log(errorData);
+
+  const readableDetail =
+    typeof errorData?.detail === "string"
+      ? errorData.detail
+      : JSON.stringify(errorData?.detail ?? errorData, null, 2);
+
+  throw new Error(readableDetail || "Error al enviar el mensaje.");
+}
 
       const data = await res.json();
 
@@ -200,6 +240,8 @@ export default function ChatBot() {
         role: "bot",
         text: botText,
       };
+      
+      console.log("📥 Response:", data);
 
       setMessages((prev) => [...prev, botMsg]);
       window.dispatchEvent(new CustomEvent("ers-refresh"));
@@ -351,70 +393,18 @@ export default function ChatBot() {
               <SendHorizonal className="text-black" size={18} />
             </button>
           </div>
-          {/*
-          <div className="relative">
-            <button
-              onClick={() => setIsWidgetsOpen(!isWidgetsOpen)}
-              className="h-[50px] px-6 bg-[#EB0029] text-white font-semibold rounded-2xl shadow hover:bg-red-700 transition flex items-center gap-2"
-            >
-              <LayoutGrid size={18} />
-              Widgets
-            </button>
-          
-        
-
-            <WidgetsModal
-              isOpen={isWidgetsOpen}
-              onClose={() => setIsWidgetsOpen(false)}
-            />
-          </div>
-        </div>
-      
-      */}
+    
         </div>
       </div>
 
-      {/* Modal login provisional */}
-      {showLoginModal && (
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-50 rounded-3xl">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 relative">
-            <button
-              onClick={() => setShowLoginModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X size={18} />
-            </button>
-
-            <h3 className="text-2xl font-bold text-gray-700 mb-2">
-              Iniciar sesión provisional
-            </h3>
-            <p className="text-sm text-gray-500 mb-5">
-              Escribe tu user_id para crear una sesión temporal en memoria.
-            </p>
-
-            <input
-              value={tempUserId}
-              onChange={(e) => setTempUserId(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  createSession();
-                }
-              }}
-              placeholder="Ej. dario_123"
-              className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#EB0029]/30"
-            />
-
-            <button
-              onClick={createSession}
-              disabled={loadingSession || !tempUserId.trim()}
-              className="mt-4 w-full bg-[#EB0029] text-white font-semibold py-3 rounded-2xl hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loadingSession ? "Creando sesión..." : "Entrar"}
-            </button>
-          </div>
-        </div>
-      )}
+      <FormModal
+  isOpen={showLoginModal}
+  tempUserId={tempUserId}
+  setTempUserId={setTempUserId}
+  loadingSession={loadingSession}
+  onClose={() => setShowLoginModal(false)}
+  onSubmit={handleProjectCreated}
+/>
     </section>
   );
 }

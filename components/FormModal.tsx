@@ -20,7 +20,7 @@ type FormDataType = {
   socio: string;
   cr: string;
   iniciativa: string;
-  departamentos: string;
+  departamentos: string[]
   tipo: string;
 };
 
@@ -45,7 +45,7 @@ export default function FormModal({
     socio: "",
     cr: "",
     iniciativa: "",
-    departamentos: "",
+    departamentos: [],
     tipo: "",
   });
 
@@ -53,6 +53,20 @@ export default function FormModal({
   const [loadingDepartamentos, setLoadingDepartamentos] = useState(false);
   const [openDep, setOpenDep] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [submittingProject, setSubmittingProject] = useState(false); // <- nuevo estado para controlar el envío del proyecto
+
+  function toggleDepartamento(id: string) { // función para agregar o quitar departamentos del array
+  setFormData((prev) => {
+    const yaExiste = prev.departamentos.includes(id);
+
+    return {
+      ...prev,
+      departamentos: yaExiste
+        ? prev.departamentos.filter((depId) => depId !== id)
+        : [...prev.departamentos, id],
+    };
+  });
+}
 
   useEffect(() => {
     async function fetchDepartamentos() {
@@ -100,69 +114,214 @@ export default function FormModal({
     key: keyof FormDataType;
     placeholder: string;
   }[] = [
-    {
-      label: "Solicitante",
-      key: "solicitante",
-      placeholder: "Juan Ramón Carranza",
-    },
-    {
-      label: "DGA",
-      key: "dga",
-      placeholder: "Tecnología",
-    },
-    {
-      label: "Información de contacto",
-      key: "contacto",
-      placeholder: "jorge.carranza@banorte.com",
-    },
-    {
-      label: "Patrocinador",
-      key: "patrocinador",
-      placeholder: "Tecnología",
-    },
-    {
-      label: "Nombre del socio de negocio",
-      key: "socio",
-      placeholder: "Interno",
-    },
-    {
-      label: "CR",
-      key: "cr",
-      placeholder: "0",
-    },
-    {
-      label: "Nombre de la iniciativa",
-      key: "iniciativa",
-      placeholder: "0",
-    },
-  ];
+      {
+        label: "Solicitante",
+        key: "solicitante",
+        placeholder: "Juan Ramón Carranza",
+      },
+      {
+        label: "DGA",
+        key: "dga",
+        placeholder: "Tecnología",
+      },
+      {
+        label: "Información de contacto",
+        key: "contacto",
+        placeholder: "jorge.carranza@banorte.com",
+      },
+      {
+        label: "Patrocinador",
+        key: "patrocinador",
+        placeholder: "Tecnología",
+      },
+      {
+        label: "Nombre del socio de negocio",
+        key: "socio",
+        placeholder: "Interno",
+      },
+      {
+        label: "CR",
+        key: "cr",
+        placeholder: "0",
+      },
+      {
+        label: "Nombre de la iniciativa",
+        key: "iniciativa",
+        placeholder: "0",
+      },
+    ];
 
-  const isFormValid = Object.values(formData).every(
-    (value) => value.trim() !== ""
-  );
+  const isFormValid =
+  formData.solicitante.trim() !== "" &&
+  formData.dga.trim() !== "" &&
+  formData.contacto.trim() !== "" &&
+  formData.patrocinador.trim() !== "" &&
+  formData.socio.trim() !== "" &&
+  formData.cr.trim() !== "" &&
+  formData.iniciativa.trim() !== "" &&
+  formData.departamentos.length > 0 &&
+  formData.tipo.trim() !== "";
 
   function handleChange(key: keyof FormDataType, value: string) {
     setFormData((prev) => ({
       ...prev,
       [key]: value,
     }));
+  }
 
-    if (key === "solicitante") {
-      setTempUserId(value);
+  async function handleSubmit() {
+    try {
+      setSubmittingProject(true);
+
+      const payload = {
+        formulario: {
+          solicitante: formData.solicitante || null,
+          dga: formData.dga || null,
+          info_contacto: formData.contacto || null,
+          patrocinador: formData.patrocinador || null,
+          nombre_socio_negocio: formData.socio || null,
+          cr: formData.cr || null,
+          nombre_iniciativa: formData.iniciativa || null,
+          departamentos_impactados: formData.departamentos,
+          tipo_iniciativa: formData.tipo || null,
+          usuario_nombre: null,
+          usuario_id: formData.solicitante.trim() || tempUserId || null,
+        },
+        plantilla: {
+          DATOS_GENERALES: {
+            SOLICITANTE: null,
+            INFO_CONTACTO: null,
+            DGA: null,
+            PATROCINADOR: null,
+            CR: null,
+            SOCIO: null,
+            NOMBRE_INICIATIVA: null,
+            TIPO_INICIATIVA: null,
+          },
+          DESCRIPCION_INICIATIVA: null,
+          OBJETIVOS_ALCANCE: {
+            OBJETIVO: null,
+            ALCANCE: null,
+          },
+          AREAS_IMPACTADAS: [],
+          TABLA_FR: {
+            AREA_PARTICIPANTE: null,
+            RESPONSABLE: null,
+          },
+          REQUERIMIENTO_REGULATORIO: {
+            AUTORIDAD: null,
+            FECHA_EMISION: null,
+            FECHA_RECEPCION: null,
+            FECHA_ENTRADA_VIGOR: null,
+            MONTO_SANCION: null,
+            SISTEMAS_APLICATIVOS: [],
+          },
+          REQUERIMIENTO_NO_REGULATORIO: {
+            ES_URGENTE: null,
+            FECHA_LIMITE: null,
+          },
+          REQUERIMIENTO_PERIODICO: {
+            PERIODICIDAD: null,
+            FECHAS_ENTREGA: [],
+          },
+          BENEFICIOS: {
+            OTROS_BENEFICIOS: null,
+          },
+          PARTICIPACION_OTRAS_AREAS: null,
+          RIESGOS: [
+            {
+              TIPO: "Credito",
+              PROBABLE_PERDIDA: null,
+              JUSTIFICACION: null,
+            },
+            {
+              TIPO: "Liquidez",
+              PROBABLE_PERDIDA: null,
+              JUSTIFICACION: null,
+            },
+            {
+              TIPO: "Mercado",
+              PROBABLE_PERDIDA: null,
+              JUSTIFICACION: null,
+            },
+            {
+              TIPO: "Operativo",
+              PROBABLE_PERDIDA: null,
+              JUSTIFICACION: null,
+            },
+            {
+              TIPO: "Reputacional",
+              PROBABLE_PERDIDA: null,
+              JUSTIFICACION: null,
+            },
+          ],
+          EXCLUSIONES: null,
+          SUPUESTOS: null,
+          RESTRICCIONES: null,
+          ANEXOS: [],
+        },
+      };
+
+      console.log("📦 PAYLOAD QUE SE ENVÍA:");
+      console.log(JSON.stringify(payload, null, 2));
+
+      const res = await fetch("http://127.0.0.1:8000/firestore/new_project", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+
+      console.log("📡 STATUS:", res.status);
+
+      const data = await res.json();
+
+      console.log("✅ RESPONSE DEL BACKEND:");
+      console.log(data);
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.detail || "No se pudo crear el proyecto.");
+      }
+      
+      console.log("Proyecto creado:", data);
+
+      sessionStorage.setItem(
+        "chat_user_id",
+        data.user_id ?? payload.formulario.usuario_id ?? ""
+      );
+      sessionStorage.setItem(
+        "chat_session_id",
+        data.session_id ?? ""
+      );
+      sessionStorage.setItem(
+        "project_id",
+        data.project_id ?? ""
+      );
+
+      setTempUserId(payload.formulario.usuario_id ?? "");
+
+      onSubmit();
+    } catch (error) {
+      console.error(error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al crear el proyecto."
+      );
+    } finally {
+      setSubmittingProject(false);
     }
   }
+  function getDepartamentosSeleccionados() {
+    if (formData.departamentos.length === 0) return "";
 
-  function handleSubmit() {
-    setTempUserId(formData.solicitante);
-    console.log("Formulario:", formData);
-    onSubmit();
-  }
-
-  function getDepartamentoSeleccionado() {
-    const dep = departamentos.find(
-      (d) => String(d.iddepartamento) === formData.departamentos
-    );
-    return dep?.nombre || "";
+    return departamentos
+      .filter((d) => formData.departamentos.includes(String(d.iddepartamento)))
+      .map((d) => d.nombre)
+      .join(", ");
   }
 
   if (!isOpen) return null;
@@ -232,10 +391,8 @@ export default function FormModal({
                 <div className="bg-gray-100 px-4 pt-3 pb-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#5B6670] min-h-[24px] flex items-center">
-                      {getDepartamentoSeleccionado() ||
-                        (loadingDepartamentos
-                          ? "Cargando departamentos..."
-                          : "")}
+                      {getDepartamentosSeleccionados() ||
+                        (loadingDepartamentos ? "Cargando departamentos..." : "")}
                     </span>
 
                     <button
@@ -245,9 +402,8 @@ export default function FormModal({
                     >
                       <ChevronDown
                         size={22}
-                        className={`transition-transform duration-200 ${
-                          openDep ? "rotate-180" : ""
-                        }`}
+                        className={`transition-transform duration-200 ${openDep ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
                   </div>
@@ -262,19 +418,25 @@ export default function FormModal({
                         No hay departamentos disponibles
                       </div>
                     ) : (
-                      departamentos.map((dep) => (
-                        <button
-                          type="button"
-                          key={dep.iddepartamento}
-                          onClick={() => {
-                            handleChange("departamentos", String(dep.iddepartamento));
-                            setOpenDep(false);
-                          }}
-                          className="w-full text-left px-4 py-[7px] text-sm text-[#5B6670] hover:bg-gray-200 transition"
-                        >
-                          {dep.nombre}
-                        </button>
-                      ))
+                      departamentos.map((dep) => {
+                        const depId = String(dep.iddepartamento);
+                        const selected = formData.departamentos.includes(depId);
+
+                        return (
+                          <button
+                            type="button"
+                            key={dep.iddepartamento}
+                            onClick={() => toggleDepartamento(depId)}
+                            className={`w-full text-left px-4 py-[7px] text-sm transition flex items-center justify-between ${selected
+                                ? "bg-gray-200 text-[#323E48] font-semibold"
+                                : "text-[#5B6670] hover:bg-gray-200"
+                              }`}
+                          >
+                            <span>{dep.nombre}</span>
+                            {selected && <span>✓</span>}
+                          </button>
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -311,11 +473,12 @@ export default function FormModal({
 
             <button
               onClick={handleSubmit}
-              disabled={loadingSession || !isFormValid}
+              disabled={loadingSession || submittingProject || !isFormValid} // <- deshabilitar el botón si se está cargando la sesión, si se está enviando el proyecto o si el formulario no es válido
               className="px-7 py-3 rounded-xl text-white font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: "#EB0029" }}
             >
-              {loadingSession ? "Cargando..." : "Continuar"}
+
+              {submittingProject ? "Creando proyecto..." : "Continuar"}
             </button>
           </div>
         </div>
@@ -325,7 +488,7 @@ export default function FormModal({
 }
 
 
- {/* COMO AGREGAR MODAL
+{/* COMO AGREGAR MODAL
 
   ya al final, antes de cerrar el section y agregar arriba el import:
   import FormModal from "@/components/FormModal";
