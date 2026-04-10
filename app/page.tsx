@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/router";
-import NewProject from "@/components/NewProject";
-import ProjectList from "@/components/ProjectList";
-import ChatBot from "@/components/ChatBot";
-import Documentacion from "@/components/Documentacion";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import LoginScreen from "@/components/LogIn";
 
-export default function Home() {
+
+export default function Page() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, []);
+
   return <LoginScreen />;
 }
