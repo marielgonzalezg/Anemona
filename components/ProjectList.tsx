@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { Home, File as FileIcon } from "lucide-react";
 
-export default function ProjectList() {
+type ProjectListProps = {
+  onGoHome: () => void;
+};
+
+export default function ProjectList({ onGoHome }: ProjectListProps) {
 
   const projects = [
     { id: 1, code: "SV-3254320326", title: "Proyecto 1", date: "23/03/2026" },
@@ -49,6 +53,7 @@ export default function ProjectList() {
           <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
           <Home
             size={30}
+            onClick={onGoHome}
             className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
           />
         </div>
