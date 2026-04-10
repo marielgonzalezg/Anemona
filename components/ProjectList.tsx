@@ -13,7 +13,7 @@ type ProjectListProps = {
 };
 
 export default function ProjectList({ onGoHome }: ProjectListProps) {
-const router = useRouter();
+ const router = useRouter();
 
   const projects = [
     { id: 1, code: "SV-3254320326", title: "Proyecto 1", date: "23/03/2026" },
@@ -122,7 +122,12 @@ const router = useRouter();
 </div>
 
 {/* BOTON */}
+{/* BOTON */}
 <div className="flex justify-center py-7">
+  <button
+    onClick={() => router.push("/proyectos-dashboard")}
+    className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
+  >
   <button
     onClick={() => router.push("/proyectos-dashboard")}
     className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
