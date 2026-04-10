@@ -11,7 +11,7 @@ export default function Home() {
 
   return (
     <main className="flex items-stretch gap-6 p-10 w-full h-screen overflow-hidden">
-
+      
       <ProjectList />
 
       {!expandDocs && <ChatBot />}
@@ -22,5 +22,7 @@ export default function Home() {
       />
 
     </main>
+
+    
   );
 }
