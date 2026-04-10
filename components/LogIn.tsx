@@ -42,7 +42,7 @@ export default function LoginScreen() {
       
       // Reemplaza esto con tu navegación, ej: navigate("/dashboard")
       alert("Login exitoso!");
-      window.location.href = "/ChatBot.tsx";
+      window.location.href = "/dashboard";
     } catch {
       setError("No se pudo conectar al servidor");
     } finally {
@@ -127,7 +127,7 @@ export default function LoginScreen() {
         </div>
 
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {<img src="public\images\DiagramaLogIn.png" alt="" style={{ maxWidth: "100%" }} />}
+          {<img src="/images/DiagramaLogIn.png" />}
         </div>
 
       </div>
