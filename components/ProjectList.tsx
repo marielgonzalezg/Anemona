@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Home, File as FileIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type ProjectItem = {
   folio: number;
@@ -14,6 +14,7 @@ type ProjectItem = {
 
 export default function ProjectList() {
   const router = useRouter();
+  const pathname = usePathname();
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -106,18 +107,24 @@ const handleOpenProjectChat = (project: ProjectItem) => {
 
   if (project.id_firestore_document) {
     sessionStorage.setItem("project_id", project.id_firestore_document);
+  } else {
+    sessionStorage.removeItem("project_id");
   }
 
-  window.dispatchEvent(
-    new CustomEvent("chat-session-changed", {
-      detail: {
-        userId: loggedUserId,
-        sessionId: project.session_id,
-        projectId: project.id_firestore_document ?? "",
-        folio: project.folio,
-      },
-    })
-  );
+  if (pathname === "/dashboard") {
+    window.dispatchEvent(
+      new CustomEvent("chat-session-changed", {
+        detail: {
+          userId: loggedUserId,
+          sessionId: project.session_id,
+          projectId: project.id_firestore_document ?? "",
+          folio: project.folio,
+        },
+      })
+    );
+  } else {
+    router.push("/dashboard");
+  }
 };
 
   return (
