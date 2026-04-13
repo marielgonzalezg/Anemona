@@ -4,6 +4,7 @@ import { useState } from "react";
 import ProjectList from "@/components/ProjectList";
 import WidgetsModal from "@/components/WidgetsModal";
 import FormModal from "@/components/FormModal";
+import RecentProjectList from "@/components/RecentProjects";
 
 type NewProjectProps = {
   onEnterDashboard: () => void;
@@ -26,7 +27,7 @@ export default function NewProject({ onEnterDashboard }: NewProjectProps) {
 
   return (
     <>
-      <ProjectList />
+      <RecentProjectList />
 
       <section className="flex-1 h-full rounded-3xl bg-gray-100 shadow-md p-6 relative overflow-hidden">
         <img
