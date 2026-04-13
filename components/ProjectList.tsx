@@ -90,7 +90,7 @@ export default function ProjectList() {
   sessionStorage.removeItem("chat_session_id");
   sessionStorage.removeItem("project_id");
 
-  router.push("/login");
+  router.push("/");
 };
 
 // que me lleve a dicho chat
@@ -158,7 +158,7 @@ Así estaba antes din el botón de log out
 
     <Home
       size={30}
-      onClick={() => router.push("/")}
+      onClick={() => window.location.href = "/dashboard"}
       className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
     />
   </div>
