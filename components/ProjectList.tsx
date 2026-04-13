@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { Home, File as FileIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+type ProjectItem = {
+  folio: number;
+  nombreproyecto: string;
+  fechacreacion: string;
+  session_id: string;
+  id_firestore_document?: string;
+};
+
 export default function ProjectList() {
   const router = useRouter();
 
@@ -24,7 +32,7 @@ export default function ProjectList() {
     return localStorage.getItem("apellidopaterno");
   });
 
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,8 +58,10 @@ export default function ProjectList() {
           throw new Error("No se pudieron obtener los proyectos");
         }
 
+        
         const data = await res.json();
         setProjects(data);
+        console.log("PROJECTS:", data);
       } catch (error) {
         console.error("Error cargando proyectos:", error);
         setProjects([]);
@@ -82,8 +92,36 @@ export default function ProjectList() {
   router.push("/login");
 };
 
+// que me lleve a dicho chat
+const handleOpenProjectChat = (project: ProjectItem) => {
+  console.log("CLICK PROJECT:", project);
+  console.log("SESSION ID DEL PROYECTO:", project.session_id);
+
+  setSelectedId(project.folio);
+
+  const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
+
+  sessionStorage.setItem("chat_user_id", loggedUserId);
+  sessionStorage.setItem("chat_session_id", project.session_id);
+
+  if (project.id_firestore_document) {
+    sessionStorage.setItem("project_id", project.id_firestore_document);
+  }
+
+  window.dispatchEvent(
+    new CustomEvent("chat-session-changed", {
+      detail: {
+        userId: loggedUserId,
+        sessionId: project.session_id,
+        projectId: project.id_firestore_document ?? "",
+        folio: project.folio,
+      },
+    })
+  );
+};
+
   return (
-    <div className="w-full max-w-xs h-full flex flex-col px-5 py-6">
+    <div className="w-full max-w-xs h-full flex flex-col bg-white px-5 py-6">
       <div className="mb-4">
 
 
@@ -156,7 +194,7 @@ Así estaba antes din el botón de log out
             return (
               <div
                 key={project.folio}
-                onClick={() => setSelectedId(project.folio)}
+                onClick={() => handleOpenProjectChat(project)}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition
                 ${isSelected ? "bg-gray-300 shadow-inner" : "hover:bg-gray-200"}
                 `}

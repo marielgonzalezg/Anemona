@@ -32,36 +32,90 @@ export default function ChatBot() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [localChatReady, setLocalChatReady] = useState(false);
 
-  const CHAT_MESSAGES_KEY = "agent-chat-messages";
-  const CHAT_INPUT_KEY = "agent-chat-input";
+  const getMessagesKey = (sessionIdValue: string) => `agent-chat-messages:${sessionIdValue}`;
+  const getInputKey = (sessionIdValue: string) => `agent-chat-input:${sessionIdValue}`;
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // QUE ME LLEVE AL CHAT SELECCIONADO 
+  const loadSessionData = (nextUserId: string, nextSessionId: string) => {
+    setUserId(nextUserId);
+    setSessionId(nextSessionId);
+    setTempUserId(nextUserId);
 
-  useEffect(() => {
-    const savedMessages = localStorage.getItem(CHAT_MESSAGES_KEY);
-    const savedInput = localStorage.getItem(CHAT_INPUT_KEY);
+    const savedMessages = localStorage.getItem(getMessagesKey(nextSessionId));
+    const savedInput = localStorage.getItem(getInputKey(nextSessionId));
 
     if (savedMessages) {
       try {
         setMessages(JSON.parse(savedMessages));
       } catch (error) {
         console.error("No se pudo cargar el chat guardado:", error);
+        setMessages([
+          { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
+        ]);
       }
+    } else {
+      setMessages([
+        { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
+      ]);
     }
 
-    if (savedInput) {
-      setInput(savedInput);
+    setInput(savedInput || "");
+    setShowLoginModal(false);
+  };
+  //
+  //ChatBot escucha el click de ProjectList
+  useEffect(() => {
+    const handleSessionChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        userId: string;
+        sessionId: string;
+        projectId?: string;
+        folio?: number;
+      }>;
+
+      console.log("EVENTO RECIBIDO EN CHAT:", customEvent.detail);
+
+      const nextUserId = customEvent.detail?.userId;
+      const nextSessionId = customEvent.detail?.sessionId;
+      const nextProjectId = customEvent.detail?.projectId;
+
+      if (!nextUserId || !nextSessionId) return;
+
+      if (nextProjectId) {
+        sessionStorage.setItem("project_id", nextProjectId);
+      }
+
+      loadSessionData(nextUserId, nextSessionId);
+    };
+
+    window.addEventListener("chat-session-changed", handleSessionChanged);
+
+    return () => {
+      window.removeEventListener("chat-session-changed", handleSessionChanged);
+    };
+  }, []);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    const savedSessionId = sessionStorage.getItem("chat_session_id");
+    const savedUserId = sessionStorage.getItem("chat_user_id");
+
+    if (savedUserId && savedSessionId) {
+      loadSessionData(savedUserId, savedSessionId);
+    } else {
+      setShowLoginModal(true);
     }
 
     setLocalChatReady(true);
   }, []);
 
   useEffect(() => {
-    if (!localChatReady) return;
-    localStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(messages));
-  }, [messages, localChatReady]);
+    if (!localChatReady || !sessionId) return;
+    localStorage.setItem(getMessagesKey(sessionId), JSON.stringify(messages));
+  }, [messages, localChatReady, sessionId]);
 
   useEffect(() => {
     if (userId && sessionId && !showLoginModal) {
@@ -72,9 +126,9 @@ export default function ChatBot() {
   }, [userId, sessionId, showLoginModal]);
 
   useEffect(() => {
-    if (!localChatReady) return;
-    localStorage.setItem(CHAT_INPUT_KEY, input);
-  }, [input, localChatReady]);
+    if (!localChatReady || !sessionId) return;
+    localStorage.setItem(getInputKey(sessionId), input);
+  }, [input, localChatReady, sessionId]);
 
   useEffect(() => {
     if (!loadingMessage && userId && sessionId && !showLoginModal) {
@@ -84,43 +138,32 @@ export default function ChatBot() {
     }
   }, [loadingMessage, userId, sessionId, showLoginModal]);
 
-  useEffect(() => {
+  function handleProjectCreated() {
     const savedUserId = sessionStorage.getItem("chat_user_id");
     const savedSessionId = sessionStorage.getItem("chat_session_id");
 
+    console.log("🟡 session_id:", savedSessionId);
+    console.log("🟡 user_id:", savedUserId);
+
     if (savedUserId && savedSessionId) {
-      setUserId(savedUserId);
-      setSessionId(savedSessionId);
-      setTempUserId(savedUserId);
-    } else {
-      setShowLoginModal(true);
+      loadSessionData(savedUserId, savedSessionId);
+
+      const savedMessages = localStorage.getItem(getMessagesKey(savedSessionId));
+
+      if (!savedMessages) {
+        setMessages([
+          {
+            id: 1,
+            role: "bot",
+            text: "Proyecto y sesión creados correctamente. Ya puedes comenzar a chatear.",
+          },
+        ]);
+      }
     }
-  }, []);
 
-  function handleProjectCreated() {
-  const savedUserId = sessionStorage.getItem("chat_user_id");
-  const savedSessionId = sessionStorage.getItem("chat_session_id");
 
-  console.log("🟡 session_id:", sessionStorage.getItem("chat_session_id"));
-  console.log("🟡 user_id:", sessionStorage.getItem("chat_user_id"));
-
-  if (savedUserId && savedSessionId) {
-    setUserId(savedUserId);
-    setSessionId(savedSessionId);
-    setTempUserId(savedUserId);
+    setShowLoginModal(false);
   }
-
-  setShowLoginModal(false);
-
-  setMessages((prev) => [
-    ...prev,
-    {
-      id: Date.now(),
-      role: "bot",
-      text: "Proyecto y sesión creados correctamente. Ya puedes comenzar a chatear.",
-    },
-  ]);
-}
 
   async function createSession() {
     const cleanUserId = tempUserId.trim();
@@ -212,18 +255,18 @@ export default function ChatBot() {
       });
 
       if (!res.ok) {
-  const errorData = await res.json().catch(() => null);
+        const errorData = await res.json().catch(() => null);
 
-  console.log("❌ ERROR COMPLETO DE /agent/query:");
-  console.log(errorData);
+        console.log("❌ ERROR COMPLETO DE /agent/query:");
+        console.log(errorData);
 
-  const readableDetail =
-    typeof errorData?.detail === "string"
-      ? errorData.detail
-      : JSON.stringify(errorData?.detail ?? errorData, null, 2);
+        const readableDetail =
+          typeof errorData?.detail === "string"
+            ? errorData.detail
+            : JSON.stringify(errorData?.detail ?? errorData, null, 2);
 
-  throw new Error(readableDetail || "Error al enviar el mensaje.");
-}
+        throw new Error(readableDetail || "Error al enviar el mensaje.");
+      }
 
       const data = await res.json();
 
@@ -240,7 +283,7 @@ export default function ChatBot() {
         role: "bot",
         text: botText,
       };
-      
+
       console.log("📥 Response:", data);
 
       setMessages((prev) => [...prev, botMsg]);
@@ -265,30 +308,6 @@ export default function ChatBot() {
     }
   }
 
-  function resetSession() {
-    sessionStorage.removeItem("chat_user_id");
-    sessionStorage.removeItem("chat_session_id");
-
-    localStorage.removeItem(CHAT_MESSAGES_KEY);
-    localStorage.removeItem(CHAT_INPUT_KEY);
-
-    setUserId("");
-    setSessionId("");
-    setTempUserId("");
-    setShowLoginModal(true);
-
-    setMessages([
-      { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
-    ]);
-    setInput("");
-
-    window.dispatchEvent(
-      new CustomEvent("chat-user-updated", {
-        detail: { userId: "" },
-      })
-    );
-  }
-
   return (
     <section className="flex-1 min-w-[420px] min-h-0 relative">
       <div className="h-full rounded-3xl bg-gray-100 shadow-md p-6 flex flex-col">
@@ -297,19 +316,6 @@ export default function ChatBot() {
           <h2 className="text-2xl font-extrabold text-gray-600 tracking-wide">
             {sessionId || "Sin sesión"}
           </h2>
-          {userId && (
-            <div className="mt-2 flex items-center justify-center gap-3">
-              <p className="text-sm text-gray-500">
-                Usuario: <span className="font-semibold">{userId}</span>
-              </p>
-              <button
-                onClick={resetSession}
-                className="text-xs px-3 py-1 rounded-full bg-white shadow hover:bg-gray-200 transition"
-              >
-                Cambiar usuario
-              </button>
-            </div>
-          )}
         </div>
 
         {/* mensajes */}
@@ -393,18 +399,18 @@ export default function ChatBot() {
               <SendHorizonal className="text-black" size={18} />
             </button>
           </div>
-    
+
         </div>
       </div>
 
       <FormModal
-  isOpen={showLoginModal}
-  tempUserId={tempUserId}
-  setTempUserId={setTempUserId}
-  loadingSession={loadingSession}
-  onClose={() => setShowLoginModal(false)}
-  onSubmit={handleProjectCreated}
-/>
+        isOpen={showLoginModal}
+        tempUserId={tempUserId}
+        setTempUserId={setTempUserId}
+        loadingSession={loadingSession}
+        onClose={() => setShowLoginModal(false)}
+        onSubmit={handleProjectCreated}
+      />
     </section>
   );
 }

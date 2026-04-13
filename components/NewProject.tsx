@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ProjectList from "@/components/ProjectList";
 import WidgetsModal from "@/components/WidgetsModal";
+import FormModal from "@/components/FormModal";
 
 type NewProjectProps = {
   onEnterDashboard: () => void;
@@ -10,8 +11,16 @@ type NewProjectProps = {
 
 export default function NewProject({ onEnterDashboard }: NewProjectProps) {
   const [showWidgets, setShowWidgets] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [tempUserId, setTempUserId] = useState("");
+  const [loadingSession, setLoadingSession] = useState(false);
 
   const handleCreateNew = () => {
+    setShowFormModal(true);
+  };
+
+  const handleProjectCreated = () => {
+    setShowFormModal(false);
     onEnterDashboard();
   };
 
@@ -44,6 +53,15 @@ export default function NewProject({ onEnterDashboard }: NewProjectProps) {
           onClose={() => setShowWidgets(false)}
         />
       </section>
+
+      <FormModal
+        isOpen={showFormModal}
+        tempUserId={tempUserId}
+        setTempUserId={setTempUserId}
+        loadingSession={loadingSession}
+        onClose={() => setShowFormModal(false)}
+        onSubmit={handleProjectCreated}
+      />
     </>
   );
 }
