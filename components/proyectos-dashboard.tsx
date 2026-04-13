@@ -10,6 +10,8 @@ interface Proyecto {
   nombreproyecto: string;
   fechacreacion: string;
   departamento: string;
+  session_id: string;
+  id_firestore_document?: string;
 }
 
 export default function ProyectosDashboard() {
@@ -30,7 +32,6 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
 });
 
 
-
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Usuario");
@@ -49,6 +50,21 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
   setFiltroArea("");
 };
 
+  const handleOpenProjectChat = (project: Proyecto) => {
+  const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
+
+  sessionStorage.setItem("chat_user_id", loggedUserId);
+  sessionStorage.setItem("chat_session_id", project.session_id);
+
+  if (project.id_firestore_document) {
+    sessionStorage.setItem("project_id", project.id_firestore_document);
+  } else {
+    sessionStorage.removeItem("project_id");
+  }
+
+  // Pasar session_id como query param para forzar cambio de ruta
+  router.push(`/dashboard?session=${project.session_id}`);
+};
 
     const handleUserUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<{ idusuario: string }>;
@@ -100,6 +116,7 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
       (!filtroFecha || p.fechacreacion?.startsWith(filtroFecha))
     );
   });
+
 
   return (
     <div className="flex h-screen w-full bg-gray-100">
@@ -220,6 +237,7 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
             {proyectosFiltrados.map((proyecto) => (
               <div
                 key={proyecto.folio}
+                onClick={() => handleOpenProjectChat(proyecto)}
                 className="group cursor-pointer rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md hover:ring-1 hover:ring-[#EB0029]/40"
               >
                 <div className="mb-2 flex items-center gap-3">

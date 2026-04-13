@@ -4,6 +4,17 @@ import { useState } from "react";
 import ProjectList from "@/components/ProjectList";
 import WidgetsModal from "@/components/WidgetsModal";
 import FormModal from "@/components/FormModal";
+import { useRouter } from "next/navigation";
+
+
+interface Proyecto {
+  folio: number;
+  nombreproyecto: string;
+  fechacreacion: string;
+  departamento: string;
+  session_id: string;
+  id_firestore_document?: string;
+}
 
 type NewProjectProps = {
   onEnterDashboard: () => void;
@@ -14,15 +25,26 @@ export default function NewProject({ onEnterDashboard }: NewProjectProps) {
   const [showFormModal, setShowFormModal] = useState(false);
   const [tempUserId, setTempUserId] = useState("");
   const [loadingSession, setLoadingSession] = useState(false);
+  const router = useRouter();
 
   const handleCreateNew = () => {
     setShowFormModal(true);
   };
 
-  const handleProjectCreated = () => {
-    setShowFormModal(false);
-    onEnterDashboard();
-  };
+  const handleProjectCreated = (newProject: Proyecto) => {
+  setShowFormModal(false);
+
+  const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
+
+  sessionStorage.setItem("chat_user_id", loggedUserId);
+  sessionStorage.setItem("chat_session_id", newProject.session_id);
+
+  if (newProject.id_firestore_document) {
+    sessionStorage.setItem("project_id", newProject.id_firestore_document);
+  }
+
+  onEnterDashboard();
+};
 
   return (
     <>

@@ -4,6 +4,7 @@ import ProjectList from "@/components/ProjectList";
 import { useEffect, useState } from "react";
 
 export default function Page() {
+
   const [expandDocs, setExpandDocs] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<"home" | "dashboard">("home");
   const [checking, setChecking] = useState(true);

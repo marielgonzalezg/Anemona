@@ -1,27 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; 
 import NewProject from "@/components/NewProject";
 import ProjectList from "@/components/ProjectList";
 import ChatBot from "@/components/ChatBot";
 import Documentacion from "@/components/Documentacion";
-import router from "next/router";
+
 
 export default function Dashboard() {
   const [expandDocs, setExpandDocs] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<"home" | "dashboard">("home");
+  const searchParams = useSearchParams(); 
   const [checking, setChecking] = useState(true);
 
+
+  // Auth check
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) {
       window.location.href = "/";
     } else {
       setChecking(false); 
     }
   }, []);
+
+  // Si viene con ?session=XYZ desde Mis Proyectos, ir directo al dashboard
+  useEffect(() => {
+    const sessionParam = searchParams.get("session");
+    if (sessionParam) {
+      setCurrentScreen("dashboard"); 
+    }
+  }, [searchParams]);
 
   if (checking) {
     return (
@@ -45,7 +55,6 @@ export default function Dashboard() {
         <>
           <ProjectList />
           {!expandDocs && <ChatBot />}
-
           <Documentacion
             expanded={expandDocs}
             onToggle={() => setExpandDocs(!expandDocs)}
