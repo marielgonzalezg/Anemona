@@ -80,7 +80,7 @@ export default function LoginScreen() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "2rem",
+          padding: "0rem",
         }}
       >
         <div
