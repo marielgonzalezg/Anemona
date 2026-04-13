@@ -114,7 +114,7 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
             <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
             <Home
             size={30}
-            onClick={() => router.push("/")}
+            onClick={() => window.location.href = "/dashboard"} 
             className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
           />
           </div>

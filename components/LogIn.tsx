@@ -31,15 +31,15 @@ export default function LoginScreen() {
       }
 
       localStorage.setItem("token", data.access_token);
-      localStorage.setItem("idusuario",       data.idusuario.toString());
-      localStorage.setItem("nombre",          data.nombre);
+      localStorage.setItem("idusuario", data.idusuario.toString());
+      localStorage.setItem("nombre", data.nombre);
       localStorage.setItem("apellidopaterno", data.apellidopaterno);
       localStorage.setItem("apellidomaterno", data.apellidomaterno);
-      localStorage.setItem("correo",          data.correo);
-      localStorage.setItem("activo",          data.activo.toString());
-      localStorage.setItem("iddepartamento",  data.iddepartamento.toString());
-      localStorage.setItem("idrol",           data.idrol.toString());
-      
+      localStorage.setItem("correo", data.correo);
+      localStorage.setItem("activo", data.activo.toString());
+      localStorage.setItem("iddepartamento", data.iddepartamento.toString());
+      localStorage.setItem("idrol", data.idrol.toString());
+
       // Reemplaza esto con tu navegación, ej: navigate("/dashboard")
       alert("Login exitoso!");
       window.location.href = "/dashboard";
@@ -51,25 +51,53 @@ export default function LoginScreen() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "white", fontFamily: "sans-serif" }}>
-
-      <div style={{ display: "flex", justifyContent: "flex-end", padding: "1.5rem 2rem" }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 36, height: 36, background: "#EB0029",
-              borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-            </div>           
-          </div>
-        </div>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "white",
+        fontFamily: "sans-serif",
+      }}
+    >
+        <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          padding: "1rem 2.5rem",
+        }}
+      >
+        <img
+          src="/images/banortelogo.png"
+          alt="Banorte"
+          style={{ height: 70, objectFit: "contain" }}
+        />
       </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          padding: "0rem 5rem",
+        }}
+      >
+        
 
-      <div style={{ display: "flex", alignItems: "center", padding: "2rem 5rem", gap: "4rem" }}>
-
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "2rem 5rem",
+          gap: "4rem",
+        }}
+      >
         <div style={{ flex: 1, maxWidth: 420 }}>
-          <h1 style={{ color: "#EB0029", fontSize: 48, fontWeight: 700, margin: "0 0 2.5rem" }}>
-            Log in
+          <h1
+            style={{
+              color: "#EB0029",
+              fontSize: 48,
+              fontWeight: 700,
+              margin: "0 0 2.5rem",
+            }}
+          >
+            Bienvenido!
           </h1>
 
           <div style={{ marginBottom: "1rem" }}>
@@ -79,11 +107,16 @@ export default function LoginScreen() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{
-                width: "100%", boxSizing: "border-box",
-                padding: "14px 16px", borderRadius: 8,
-                border: "none", borderBottom: "2px solid #ccc",
-                background: "#f5f5f5", fontSize: 15, outline: "none",
-                color: "#111"
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "14px 16px",
+                borderRadius: 8,
+                border: "none",
+                borderBottom: "2px solid #ccc",
+                background: "#f5f5f5",
+                fontSize: 15,
+                outline: "none",
+                color: "#111",
               }}
             />
           </div>
@@ -95,12 +128,16 @@ export default function LoginScreen() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={{
-                width: "100%", boxSizing: "border-box",
-                padding: "14px 16px", borderRadius: 8,
-                border: "none", borderBottom: "2px solid #ccc",
-                background: "#f5f5f5", fontSize: 15, outline: "none",
-                color: "#111"
-
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "14px 16px",
+                borderRadius: 8,
+                border: "none",
+                borderBottom: "2px solid #ccc",
+                background: "#f5f5f5",
+                fontSize: 15,
+                outline: "none",
+                color: "#111",
               }}
             />
           </div>
@@ -115,10 +152,14 @@ export default function LoginScreen() {
             onClick={handeLogin}
             disabled={loading}
             style={{
-              width: "100%", padding: "15px",
+              width: "100%",
+              padding: "15px",
               background: loading ? "#c0392b" : "#EB0029",
-              color: "white", border: "none", borderRadius: 8,
-              fontSize: 16, fontWeight: 600,
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 16,
+              fontWeight: 600,
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
@@ -126,12 +167,18 @@ export default function LoginScreen() {
           </button>
         </div>
 
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           {<img src="/images/DiagramaLogIn.png" />}
         </div>
-
       </div>
+    </div>
     </div>
   );
 }
-
