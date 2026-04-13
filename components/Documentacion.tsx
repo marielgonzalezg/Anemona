@@ -80,6 +80,12 @@ export default function Documentacion({
   const [loadingERS, setLoadingERS] = useState(true);
   const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
 
+  // bajar por id de doc
+  const getActiveProjectId = () => {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem("project_id") || "";
+};
+
   const detectChanges = (oldData: any, newData: any) => {
   const changed = new Set<string>();
 
@@ -117,13 +123,23 @@ const fetchERS = async (
   timeoutRef?: { current: ReturnType<typeof setTimeout> | null }
 ) => {
   try {
-    const response = await fetch("http://127.0.0.1:8000/firestore/bajar", {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-      },
-      cache: "no-store",
-    });
+    const docId = getActiveProjectId();
+
+    if (!docId) {
+      setErsData(null);
+      return;
+    }
+
+    const response = await fetch(
+      `http://127.0.0.1:8000/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+        },
+        cache: "no-store",
+      }
+    );
 
     if (!response.ok) {
       throw new Error("No se pudo obtener el ERS");
@@ -141,9 +157,10 @@ const fetchERS = async (
           setChangedFields(changes);
 
           if (timeoutRef?.current) clearTimeout(timeoutRef.current);
-          timeoutRef && (timeoutRef.current = setTimeout(() => {
-            setChangedFields(new Set());
-          }, 5000));
+          timeoutRef &&
+            (timeoutRef.current = setTimeout(() => {
+              setChangedFields(new Set());
+            }, 5000));
 
           return json.data;
         }
@@ -197,45 +214,55 @@ const fetchERS = async (
   };
 
   const fetchERS = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/firestore/bajar", {
+  try {
+    const docId = getActiveProjectId();
+
+    if (!docId) {
+      setErsData(null);
+      return;
+    }
+
+    const response = await fetch(
+      `http://127.0.0.1:8000/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
+      {
         method: "GET",
         headers: { accept: "application/json" },
         cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error("No se pudo obtener el ERS");
       }
+    );
 
-      const json = await response.json();
-
-      if (isMounted && json.ok && json.data) {
-        setErsData((prev) => {
-          if (!prev) return json.data;
-
-          const changes = detectChanges(prev, json.data);
-
-          if (changes.size > 0) {
-            setChangedFields(changes);
-
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-              if (isMounted) setChangedFields(new Set());
-            }, 5000);
-
-            return json.data;
-          }
-
-          return prev;
-        });
-      }
-    } catch (error) {
-      console.error("Error cargando ERS:", error);
-    } finally {
-      if (isMounted) setLoadingERS(false);
+    if (!response.ok) {
+      throw new Error("No se pudo obtener el ERS");
     }
-  };
+
+    const json = await response.json();
+
+    if (isMounted && json.ok && json.data) {
+      setErsData((prev) => {
+        if (!prev) return json.data;
+
+        const changes = detectChanges(prev, json.data);
+
+        if (changes.size > 0) {
+          setChangedFields(changes);
+
+          if (timeoutId) clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            if (isMounted) setChangedFields(new Set());
+          }, 5000);
+
+          return json.data;
+        }
+
+        return prev;
+      });
+    }
+  } catch (error) {
+    console.error("Error cargando ERS:", error);
+  } finally {
+    if (isMounted) setLoadingERS(false);
+  }
+};
 
   const handleRefresh = () => {
     fetchERS();
@@ -246,12 +273,14 @@ const fetchERS = async (
 
   // escuchar evento del chat
   window.addEventListener("ers-refresh", handleRefresh);
+window.addEventListener("chat-session-changed", handleRefresh);
 
-  return () => {
-    isMounted = false;
-    window.removeEventListener("ers-refresh", handleRefresh);
-    if (timeoutId) clearTimeout(timeoutId);
-  };
+return () => {
+  isMounted = false;
+  window.removeEventListener("ers-refresh", handleRefresh);
+  window.removeEventListener("chat-session-changed", handleRefresh);
+  if (timeoutId) clearTimeout(timeoutId);
+};
 }, []);
 
   const wrapperClass = expanded
