@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Home, File as FileIcon } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 type ProjectItem = {
   folio: number;
@@ -15,6 +16,7 @@ type ProjectItem = {
 export default function ProjectList() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -35,6 +37,7 @@ export default function ProjectList() {
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -73,6 +76,20 @@ export default function ProjectList() {
 
     fetchProjects();
   }, [idusuario]);
+
+  useEffect(() => {
+  const sessionFromURL = searchParams.get("session");
+
+  if (!sessionFromURL || projects.length === 0) return;
+
+  const selectedProject = projects.find(
+    (p) => p.session_id === sessionFromURL
+  );
+
+  if (selectedProject) {
+    setSelectedId(selectedProject.folio);
+  }
+}, [searchParams, projects]);
 
   // Botón PROVICIONAL de logout para limpiar el localStorage y redirigir al login
   const handleLogout = () => {
@@ -126,6 +143,12 @@ const handleOpenProjectChat = (project: ProjectItem) => {
     router.push("/dashboard");
   }
 };
+
+const orderedProjects = [...projects].sort((a, b) => {
+  if (a.folio === selectedId) return -1;
+  if (b.folio === selectedId) return 1;
+  return 0;
+});
 
   return (
     <div className="w-full max-w-xs h-full flex flex-col bg-white px-5 py-6">
@@ -195,7 +218,7 @@ Así estaba antes din el botón de log out
             No hay proyectos para este usuario.
           </div>
         ) : (
-          projects.map((project) => {
+          orderedProjects.map((project) => {
             const isSelected = selectedId === project.folio;
 
             return (
