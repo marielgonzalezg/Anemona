@@ -2,69 +2,126 @@
 
 import { useEffect, useState } from "react";
 import { Home, File as FileIcon } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-
-
 export default function ProjectList() {
- const router = useRouter();
+  const router = useRouter();
 
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  const projects = [
-    { id: 1, code: "SV-3254320326", title: "Proyecto 1", date: "23/03/2026" },
-    { id: 2, code: "SV-3254320325", title: "Proyecto 2", date: "21/03/2026" },
-    { id: 3, code: "SV-3254320324", title: "Proyecto 3", date: "19/03/2026" },
-    { id: 4, code: "SV-3254320320", title: "Proyecto 4", date: "17/03/2026" },
-    { id: 5, code: "SV-3254320323", title: "Proyecto 4", date: "17/03/2026" },
-    { id: 6, code: "SV-3254320321", title: "Proyecto 4", date: "17/03/2026" },
-    { id: 7, code: "SV-3254320328", title: "Proyecto 4", date: "17/03/2026" },
-    { id: 8, code: "SV-3254320520", title: "Proyecto 4", date: "17/03/2026" },
-    { id: 9, code: "SV-3254320423", title: "Proyecto 4", date: "17/03/2026" },
-    { id: 10, code: "SV-3254340323", title: "Proyecto 4", date: "17/03/2026" },
-  ];
+  const [idusuario, setIdUsuario] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("idusuario")?.trim() || null;
+  });
 
-  const [selectedId, setSelectedId] = useState<number | null>(1);
-  const [userName, setUserName] = useState<string>("Usuario");
+  const [nombre, setNombre] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("nombre");
+  });
+
+  const [apellidopaterno, setApellidopaterno] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("apellidopaterno");
+  });
+
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const loadUser = () => {
-    const savedUser = sessionStorage.getItem("chat_user_id");
-    setUserName(savedUser || "Usuario");
-  };
+    if (typeof window === "undefined") return;
 
-  const handleUserUpdate = (event: Event) => {
-    const customEvent = event as CustomEvent<{ userId: string }>;
-    setUserName(customEvent.detail?.userId || "Usuario");
-  };
+    setIdUsuario(localStorage.getItem("idusuario")?.trim() || null);
+    setNombre(localStorage.getItem("nombre"));
+    setApellidopaterno(localStorage.getItem("apellidopaterno"));
+  }, []);
 
-  loadUser();
-  window.addEventListener("chat-user-updated", handleUserUpdate);
+  useEffect(() => {
+    if (!idusuario) return;
 
-  return () => {
-    window.removeEventListener("chat-user-updated", handleUserUpdate);
-  };
-}, []);
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+
+        const res = await fetch(
+          `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos`
+        );
+
+        if (!res.ok) {
+          throw new Error("No se pudieron obtener los proyectos");
+        }
+
+        const data = await res.json();
+        setProjects(data);
+      } catch (error) {
+        console.error("Error cargando proyectos:", error);
+        setProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [idusuario]);
+
+  // Botón PROVICIONAL de logout para limpiar el localStorage y redirigir al login
+  const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("idusuario");
+  localStorage.removeItem("nombre");
+  localStorage.removeItem("apellidopaterno");
+  localStorage.removeItem("apellidomaterno");
+  localStorage.removeItem("correo");
+  localStorage.removeItem("activo");
+  localStorage.removeItem("iddepartamento");
+  localStorage.removeItem("idrol");
+
+  sessionStorage.removeItem("chat_user_id");
+  sessionStorage.removeItem("chat_session_id");
+  sessionStorage.removeItem("project_id");
+
+  router.push("/login");
+};
 
   return (
-    <div className="w-full max-w-xs h-full flex flex-col bg-white px-5 py-6 shadow-sm">
-
-      {/* HEADER */}
+    <div className="w-full max-w-xs h-full flex flex-col px-5 py-6">
       <div className="mb-4">
+
+
+{/*
+Así estaba antes din el botón de log out
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
           <Home
             size={30}
-
             onClick={() => router.push("/")}
-
             className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
           />
         </div>
+*/}
+
+
+<div className="flex items-center justify-between">
+  <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
+
+  <div className="flex items-center gap-2">
+    <button
+      onClick={handleLogout}
+      className="rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-[#EB0029]"
+    >
+      Log out
+    </button>
+
+    <Home
+      size={30}
+      onClick={() => router.push("/")}
+      className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
+    />
+  </div>
+</div>
+
         <div className="h-[2px] w-full bg-[#EB0029] mt-1"></div>
       </div>
 
-      {/* PERFIL */}
       <div className="flex flex-col items-center my-6">
         <div className="w-28 h-28 rounded-full bg-gray-100 shadow-md flex items-center justify-center overflow-hidden mb-3">
           <svg viewBox="0 0 100 100" className="w-full h-full">
@@ -79,57 +136,66 @@ export default function ProjectList() {
         </div>
 
         <p className="text-xl font-bold text-gray-700">
-  {userName.split("_")[0]}
-</p>
+          {`${nombre ?? ""} ${apellidopaterno ?? ""}`.trim() || "Usuario"}
+        </p>
       </div>
 
-      {/* LISTA CON SCROLL */}
-<div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1 scrollbar-thin scrollbar-thumb-gray-300">
-  {projects.map((project) => {
-    const isSelected = selectedId === project.id;
-
-    return (
-      <div
-        key={project.id}
-        onClick={() => setSelectedId(project.id)}
-        className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition
-        ${isSelected ? "bg-gray-300 shadow-inner" : "hover:bg-gray-200"}
-        `}
-      >
-        <div className="w-8 h-8 bg-[#EB0029] rounded-md flex items-center justify-center text-white flex-shrink-0">
-          <FileIcon size={14} strokeWidth={2.5} />
-        </div>
-
-        <div className="flex-1">
-          <div className="flex items-center">
-            <span className="text-[#EB0029] text-sm font-semibold">
-              {project.code}
-            </span>
-            <span className="ml-auto text-[10px] text-gray-500">
-              {project.date}
-            </span>
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1 scrollbar-thin scrollbar-thumb-gray-300">
+        {loading ? (
+          <div className="text-sm text-gray-400 text-center mt-4">
+            Cargando proyectos...
           </div>
-
-          <div className="text-xs text-gray-600 mt-1">
-            {project.title}
+        ) : projects.length === 0 ? (
+          <div className="text-sm text-gray-400 text-center mt-4">
+            No hay proyectos para este usuario.
           </div>
-        </div>
+        ) : (
+          projects.map((project) => {
+            const isSelected = selectedId === project.folio;
+
+            return (
+              <div
+                key={project.folio}
+                onClick={() => setSelectedId(project.folio)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition
+                ${isSelected ? "bg-gray-300 shadow-inner" : "hover:bg-gray-200"}
+                `}
+              >
+                <div className="w-8 h-8 bg-[#EB0029] rounded-md flex items-center justify-center text-white flex-shrink-0">
+                  <FileIcon size={14} strokeWidth={2.5} />
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    <span className="text-[#EB0029] text-sm font-semibold">
+                      {project.folio}
+                    </span>
+                    <span className="ml-auto text-[10px] text-gray-500">
+                      {project.fechacreacion
+                        ? new Date(project.fechacreacion).toLocaleDateString("es-MX")
+                        : ""}
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-gray-600 mt-1">
+                    {project.nombreproyecto}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
-    );
-  })}
-</div>
 
-{/* BOTON */}
-<div className="flex justify-center py-7">
-  <button
-    onClick={() => router.push("/proyectos-dashboard")}
-    className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
-  >
-    Ver Todos
-  </button>
-</div>
+      <div className="flex justify-center py-7">
+        <button
+          onClick={() => router.push("/proyectos-dashboard")}
+          className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
+        >
+          Ver Todos
+        </button>
+      </div>
 
-      {/* LOGO */}
       <div className="mt-auto pt-1 left-0 w-full flex justify-center">
         <img
           src="/images/banortelogo.png"
@@ -137,7 +203,6 @@ export default function ProjectList() {
           className="h-15"
         />
       </div>
-
     </div>
   );
 }

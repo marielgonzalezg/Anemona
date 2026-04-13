@@ -93,6 +93,30 @@ export default function FormModal({
     }
   }, [isOpen]);
 
+  // Auto llenado de campos solicitante y contacto con la info del usuario logueado, si está disponible
+  useEffect(() => {
+  if (!isOpen || typeof window === "undefined") return;
+
+  const nombre = localStorage.getItem("nombre") || "";
+  const apellidopaterno = localStorage.getItem("apellidopaterno") || "";
+  const apellidomaterno = localStorage.getItem("apellidomaterno") || "";
+  const correo = localStorage.getItem("correo") || "";
+  const idusuario = localStorage.getItem("idusuario") || tempUserId || "";
+
+  const nombreCompleto = [nombre, apellidopaterno, apellidomaterno]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  setFormData((prev) => ({
+    ...prev,
+    solicitante: nombreCompleto,
+    contacto: correo,
+  }));
+
+  setTempUserId(idusuario);
+}, [isOpen, tempUserId, setTempUserId]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -185,7 +209,7 @@ export default function FormModal({
           departamentos_impactados: formData.departamentos,
           tipo_iniciativa: formData.tipo || null,
           usuario_nombre: null,
-          usuario_id: formData.solicitante.trim() || tempUserId || null,
+          usuario_id: tempUserId || localStorage.getItem("idusuario") || null,
         },
         plantilla: {
           DATOS_GENERALES: {
@@ -361,21 +385,26 @@ export default function FormModal({
             Por favor, ingrese la siguiente información.
           </p>
 
-          <div className="grid grid-cols-2 gap-x-12 gap-y-10">
+          <div className="grid grid-cols-2 gap-y-10">
             {fields.map((field, i) => (
               <div key={i}>
                 <label className="block text-sm font-bold text-[#323E48] mb-2">
                   {field.label}
                 </label>
 
-                <div className="w-[70%]">
+                <div className="w-[75%]">
                   <div className="bg-gray-100 px-4 pt-3 pb-2">
                     <input
-                      value={formData[field.key]}
-                      onChange={(e) => handleChange(field.key, e.target.value)}
-                      className="w-full bg-transparent outline-none text-sm text-[#5B6670] placeholder:text-[#b5bcc2]"
-                      placeholder={field.placeholder}
-                    />
+  value={formData[field.key]}
+  onChange={(e) => handleChange(field.key, e.target.value)}
+  readOnly={field.key === "solicitante" || field.key === "contacto"}
+  className={`w-full bg-transparent outline-none text-sm text-[#5B6670] placeholder:text-[#b5bcc2] ${
+    field.key === "solicitante" || field.key === "contacto"
+      ? "cursor-not-allowed"
+      : ""
+  }`}
+  placeholder={field.placeholder}
+/>
                   </div>
                   <div className="h-[1px] bg-[#5B6670] mt-[1px] w-full" />
                 </div>
@@ -387,10 +416,10 @@ export default function FormModal({
                 Departamentos impactados
               </label>
 
-              <div className="w-[70%] relative" ref={dropdownRef}>
+              <div className="w-[75%] relative" ref={dropdownRef}>
                 <div className="bg-gray-100 px-4 pt-3 pb-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#5B6670] min-h-[24px] flex items-center">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-[#5B6670] min-h-[24px] flex items-center overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-700">
                       {getDepartamentosSeleccionados() ||
                         (loadingDepartamentos ? "Cargando departamentos..." : "")}
                     </span>
