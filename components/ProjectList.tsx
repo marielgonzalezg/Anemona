@@ -62,7 +62,7 @@ export default function ProjectList() {
           throw new Error("No se pudieron obtener los proyectos");
         }
 
-        
+
         const data = await res.json();
         setProjects(data);
         console.log("PROJECTS:", data);
@@ -78,84 +78,86 @@ export default function ProjectList() {
   }, [idusuario]);
 
   useEffect(() => {
-  const sessionFromURL = searchParams.get("session");
+    const sessionFromURL = searchParams.get("session");
 
-  if (!sessionFromURL || projects.length === 0) return;
+    if (!sessionFromURL || projects.length === 0) return;
 
-  const selectedProject = projects.find(
-    (p) => p.session_id === sessionFromURL
-  );
+    const selectedProject = projects.find(
+      (p) => p.session_id === sessionFromURL
+    );
 
-  if (selectedProject) {
-    setSelectedId(selectedProject.folio);
-  }
-}, [searchParams, projects]);
+    if (selectedProject) {
+      setSelectedId(selectedProject.folio);
+    }
+  }, [searchParams, projects]);
 
   // Botón PROVICIONAL de logout para limpiar el localStorage y redirigir al login
   const handleLogout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("idusuario");
-  localStorage.removeItem("nombre");
-  localStorage.removeItem("apellidopaterno");
-  localStorage.removeItem("apellidomaterno");
-  localStorage.removeItem("correo");
-  localStorage.removeItem("activo");
-  localStorage.removeItem("iddepartamento");
-  localStorage.removeItem("idrol");
+    localStorage.removeItem("token");
+    localStorage.removeItem("idusuario");
+    localStorage.removeItem("nombre");
+    localStorage.removeItem("apellidopaterno");
+    localStorage.removeItem("apellidomaterno");
+    localStorage.removeItem("correo");
+    localStorage.removeItem("activo");
+    localStorage.removeItem("iddepartamento");
+    localStorage.removeItem("idrol");
 
-  sessionStorage.removeItem("chat_user_id");
-  sessionStorage.removeItem("chat_session_id");
-  sessionStorage.removeItem("project_id");
-
-  router.push("/");
-};
-
-// que me lleve a dicho chat
-const handleOpenProjectChat = (project: ProjectItem) => {
-  console.log("CLICK PROJECT:", project);
-  console.log("SESSION ID DEL PROYECTO:", project.session_id);
-
-  setSelectedId(project.folio);
-
-  const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
-
-  sessionStorage.setItem("chat_user_id", loggedUserId);
-  sessionStorage.setItem("chat_session_id", project.session_id);
-
-  if (project.id_firestore_document) {
-    sessionStorage.setItem("project_id", project.id_firestore_document);
-  } else {
+    sessionStorage.removeItem("chat_user_id");
+    sessionStorage.removeItem("chat_session_id");
     sessionStorage.removeItem("project_id");
-  }
 
-  if (pathname === "/dashboard") {
-    window.dispatchEvent(
-      new CustomEvent("chat-session-changed", {
-        detail: {
-          userId: loggedUserId,
-          sessionId: project.session_id,
-          projectId: project.id_firestore_document ?? "",
-          folio: project.folio,
-        },
-      })
-    );
-  } else {
-    router.push("/dashboard");
-  }
-};
+    router.push("/");
+  };
 
-const orderedProjects = [...projects].sort((a, b) => {
-  if (a.folio === selectedId) return -1;
-  if (b.folio === selectedId) return 1;
-  return 0;
-});
+  // que me lleve a dicho chat
+  const handleOpenProjectChat = (project: ProjectItem) => {
+    console.log("CLICK PROJECT:", project);
+    console.log("SESSION ID DEL PROYECTO:", project.session_id);
+
+    setSelectedId(project.folio);
+
+    const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
+
+    sessionStorage.setItem("chat_user_id", loggedUserId);
+    sessionStorage.setItem("chat_session_id", project.session_id);
+
+    if (project.id_firestore_document) {
+      sessionStorage.setItem("project_id", project.id_firestore_document);
+    } else {
+      sessionStorage.removeItem("project_id");
+    }
+
+    const currentSession = searchParams.get("session");
+
+    if (pathname === "/dashboard" && currentSession) {
+      window.dispatchEvent(
+        new CustomEvent("chat-session-changed", {
+          detail: {
+            userId: loggedUserId,
+            sessionId: project.session_id,
+            projectId: project.id_firestore_document ?? "",
+            folio: project.folio,
+          },
+        })
+      );
+    } else {
+      router.push(`/dashboard?session=${project.session_id}`);
+    }
+  };
+
+  const orderedProjects = [...projects].sort((a, b) => {
+    if (a.folio === selectedId) return -1;
+    if (b.folio === selectedId) return 1;
+    return 0;
+  });
 
   return (
     <div className="w-full max-w-xs h-full flex flex-col bg-white px-5 py-6">
       <div className="mb-4">
 
 
-{/*
+        {/*
 Así estaba antes din el botón de log out
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
@@ -168,24 +170,24 @@ Así estaba antes din el botón de log out
 */}
 
 
-<div className="flex items-center justify-between">
-  <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
 
-  <div className="flex items-center gap-2">
-    <button
-      onClick={handleLogout}
-      className="rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-[#EB0029]"
-    >
-      Log out
-    </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-[#EB0029]"
+            >
+              Log out
+            </button>
 
-    <Home
-      size={30}
-      onClick={() => window.location.href = "/dashboard"}
-      className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
-    />
-  </div>
-</div>
+            <Home
+              size={30}
+              onClick={() => window.location.href = "/dashboard"}
+              className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
+            />
+          </div>
+        </div>
 
         <div className="h-[2px] w-full bg-[#EB0029] mt-1"></div>
       </div>

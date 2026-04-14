@@ -118,7 +118,7 @@ export default function RecentProjectList() {
         })
       );
     } else {
-      router.push("/dashboard");
+      router.push(`/dashboard?session=${project.session_id}`);
     }
   };
 

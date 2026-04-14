@@ -4,20 +4,27 @@ import { useState } from "react";
 import ProjectList from "@/components/ProjectList";
 import WidgetsModal from "@/components/WidgetsModal";
 import FormModal from "@/components/FormModal";
+import RecentProjectList from "@/components/RecentProjects";
 import { useRouter } from "next/navigation";
 
 
 interface Proyecto {
-  folio: number;
-  nombreproyecto: string;
-  fechacreacion: string;
-  departamento: string;
-  session_id: string;
-  id_firestore_document?: string;
+    folio: number;
+    nombreproyecto: string;
+    fechacreacion: string;
+    departamento: string;
+    session_id: string;
+    id_firestore_document?: string;
 }
 
 type NewProjectProps = {
   onEnterDashboard: () => void;
+};
+
+type ProyectoCreado = {
+  session_id: string;
+  user_id?: string;
+  project_id?: string;
 };
 
 export default function NewProject({ onEnterDashboard }: NewProjectProps) {
@@ -25,26 +32,30 @@ export default function NewProject({ onEnterDashboard }: NewProjectProps) {
   const [showFormModal, setShowFormModal] = useState(false);
   const [tempUserId, setTempUserId] = useState("");
   const [loadingSession, setLoadingSession] = useState(false);
-  const router = useRouter();
 
   const handleCreateNew = () => {
     setShowFormModal(true);
   };
 
-  const handleProjectCreated = (newProject: Proyecto) => {
-  setShowFormModal(false);
+  const handleProjectCreated = () => {
+    const savedUserId = sessionStorage.getItem("chat_user_id");
+    const savedSessionId = sessionStorage.getItem("chat_session_id");
+    const savedProjectId = sessionStorage.getItem("project_id");
 
-  const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
+    console.log("Proyecto creado desde FormModal");
+    console.log("chat_user_id:", savedUserId);
+    console.log("chat_session_id:", savedSessionId);
+    console.log("project_id:", savedProjectId);
 
-  sessionStorage.setItem("chat_user_id", loggedUserId);
-  sessionStorage.setItem("chat_session_id", newProject.session_id);
+    setShowFormModal(false);
 
-  if (newProject.id_firestore_document) {
-    sessionStorage.setItem("project_id", newProject.id_firestore_document);
-  }
-
-  onEnterDashboard();
-};
+    // Navega si quedaron guardados los datos
+    if (savedUserId && savedSessionId) {
+      onEnterDashboard();
+    } else {
+      alert("No se pudo recuperar la sesión del proyecto creado.");
+    }
+  };
 
   return (
     <>
