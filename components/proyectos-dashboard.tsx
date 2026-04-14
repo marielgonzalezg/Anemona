@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, File as FileIcon, Filter, Calendar } from "lucide-react";
+import { Home, File as FileIcon, Filter, Calendar, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -15,27 +15,29 @@ interface Proyecto {
 }
 
 export default function ProyectosDashboard() {
-  
+
   const [idusuario, setIdUsuario] = useState<string | null>(() => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("idusuario")?.trim() || null;
-});
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("idusuario")?.trim() || null;
+  });
 
-const [nombre, setNombre] = useState<string | null>(() => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("nombre");
-});
+  const [nombre, setNombre] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("nombre");
+  });
 
-const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("apellidopaterno");
-});
+  const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("apellidopaterno");
+  });
 
 
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Usuario");
   const router = useRouter();
+  const [folioAEliminar, setFolioAEliminar] = useState<number | null>(null);
+  const [eliminando, setEliminando] = useState(false);
 
   // Filtros
   const [filtroFolio, setFiltroFolio] = useState("");
@@ -44,58 +46,99 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
   const [filtroArea, setFiltroArea] = useState("");
 
   const limpiarFiltros = () => {
-  setFiltroFolio("");
-  setFiltroNombre("");
-  setFiltroFecha("");
-  setFiltroArea("");
-};
+    setFiltroFolio("");
+    setFiltroNombre("");
+    setFiltroFecha("");
+    setFiltroArea("");
+  };
 
   const handleOpenProjectChat = (project: Proyecto) => {
-  const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
+    const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
 
-  sessionStorage.setItem("chat_user_id", loggedUserId);
-  sessionStorage.setItem("chat_session_id", project.session_id);
+    sessionStorage.setItem("chat_user_id", loggedUserId);
+    sessionStorage.setItem("chat_session_id", project.session_id);
 
-  if (project.id_firestore_document) {
-    sessionStorage.setItem("project_id", project.id_firestore_document);
-  } else {
-    sessionStorage.removeItem("project_id");
-  }
+    if (project.id_firestore_document) {
+      sessionStorage.setItem("project_id", project.id_firestore_document);
+    } else {
+      sessionStorage.removeItem("project_id");
+    }
 
-  // Pasar session_id como query param para forzar cambio de ruta
-  router.push(`/dashboard?session=${project.session_id}`);
-};
+    // Pasar session_id como query param para forzar cambio de ruta
+    router.push(`/dashboard?session=${project.session_id}`);
+  };
 
-    const handleUserUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<{ idusuario: string }>;
-      setUserName(customEvent.detail?.idusuario || "Usuario");
-    };
+  const abrirConfirmacionEliminar = (folio: number) => {
+    setFolioAEliminar(folio);
+  };
 
+  const cerrarConfirmacionEliminar = () => {
+    if (eliminando) return;
+    setFolioAEliminar(null);
+  };
 
-  useEffect(() => {
-  if (!idusuario) return;
+  const confirmarEliminarProyecto = async () => {
+    if (!folioAEliminar) return;
 
-  setLoading(true);
-
-  const fetchProyectos = async () => {
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos`
-      );
+      setEliminando(true);
+
+      const res = await fetch(`http://127.0.0.1:8000/proyectos/${folioAEliminar}`, {
+        method: "DELETE",
+      });
 
       const data = await res.json();
-      console.log("DATA:", data);
 
-      setProyectos(data);
+      if (!res.ok) {
+        throw new Error(data.detail || "No se pudo eliminar el proyecto");
+      }
+
+      setProyectos((prev) =>
+        prev.filter((proyecto) => proyecto.folio !== folioAEliminar)
+      );
+
+      setFolioAEliminar(null);
     } catch (error) {
       console.error(error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al eliminar el proyecto"
+      );
     } finally {
-      setLoading(false);
+      setEliminando(false);
     }
   };
 
-  fetchProyectos();
-}, [idusuario]);
+  const handleUserUpdate = (event: Event) => {
+    const customEvent = event as CustomEvent<{ idusuario: string }>;
+    setUserName(customEvent.detail?.idusuario || "Usuario");
+  };
+
+  useEffect(() => {
+    if (!idusuario) return;
+
+    setLoading(true);
+
+    const fetchProyectos = async () => {
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos`
+        );
+
+        const data = await res.json();
+        console.log("DATA:", data);
+
+        setProyectos(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProyectos();
+  }, [idusuario]);
 
   const formatDate = (isoDate: string) => {
     if (!isoDate) return "";
@@ -123,37 +166,37 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
 
       {/* ── SIDEBAR ── */}
       <aside className="flex h-full w-90 flex-shrink-0 flex-col bg-white px-5 py-6 shadow-sm">
-       
+
 
         {/* Header */}
         <div>
           <div className="flex items-center justify-between pt-5">
             <h1 className="text-2xl font-bold text-[#EB0029]">Mis Proyectos</h1>
             <Home
-            size={30}
-            onClick={() => window.location.href = "/dashboard"} 
-            className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
-          />
+              size={30}
+              onClick={() => window.location.href = "/dashboard"}
+              className="text-gray-500 hover:text-[#EB0029] hover:bg-gray-100 p-1 rounded cursor-pointer transition"
+            />
           </div>
           <div className="mt-1 h-[2px] w-full bg-[#EB0029]" />
         </div>
 
         {/* PERFIL */}
-      <div className="flex flex-col items-center my-6 pt-10">
-        <div className="w-28 h-28 rounded-full bg-gray-100 shadow-md flex items-center justify-center overflow-hidden mb-3">
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <circle cx="50" cy="50" r="50" fill="#e8e8e8" />
-            <ellipse cx="50" cy="85" rx="28" ry="20" fill="#2c3e6b" />
-            <rect x="43" y="65" width="14" height="15" rx="2" fill="white" />
-            <polygon points="50,67 47,72 50,85 53,72" fill="#EB0029" />
-            <ellipse cx="50" cy="40" rx="18" ry="20" fill="#f5c9a0" />
-            <ellipse cx="50" cy="24" rx="18" ry="10" fill="#2c3e6b" />
-            <rect x="32" y="24" width="36" height="8" fill="#2c3e6b" />
-          </svg>
-        </div>
+        <div className="flex flex-col items-center my-6 pt-10">
+          <div className="w-28 h-28 rounded-full bg-gray-100 shadow-md flex items-center justify-center overflow-hidden mb-3">
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              <circle cx="50" cy="50" r="50" fill="#e8e8e8" />
+              <ellipse cx="50" cy="85" rx="28" ry="20" fill="#2c3e6b" />
+              <rect x="43" y="65" width="14" height="15" rx="2" fill="white" />
+              <polygon points="50,67 47,72 50,85 53,72" fill="#EB0029" />
+              <ellipse cx="50" cy="40" rx="18" ry="20" fill="#f5c9a0" />
+              <ellipse cx="50" cy="24" rx="18" ry="10" fill="#2c3e6b" />
+              <rect x="32" y="24" width="36" height="8" fill="#2c3e6b" />
+            </svg>
+          </div>
           <p className="text-xl font-bold text-gray-700 pb-5">
-          {`${nombre?.split("_")[0] || ""} ${apellidopaterno || ""}`}
-        </p>
+            {`${nombre?.split("_")[0] || ""} ${apellidopaterno || ""}`}
+          </p>
         </div>
 
         {/* Filtros */}
@@ -210,11 +253,11 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
         </div>
 
         <button
-        onClick={limpiarFiltros}
-        className="bg-[#EB0029] text-white font-semibold text-xs px-3 py-2 rounded-md hover:bg-red-700 transition mt-10"
-      >
-        Limpiar
-      </button>
+          onClick={limpiarFiltros}
+          className="bg-[#EB0029] text-white font-semibold text-xs px-3 py-2 rounded-md hover:bg-red-700 transition mt-10"
+        >
+          Limpiar
+        </button>
 
         {/* Logo */}
         <div className="mt-auto flex justify-center pt-4">
@@ -244,9 +287,22 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-[#EB0029]">
                     <FileIcon size={14} strokeWidth={2.5} className="text-white" />
                   </div>
+
                   <span className="truncate text-sm font-semibold text-[#EB0029]">
                     {proyecto.folio}
                   </span>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      abrirConfirmacionEliminar(proyecto.folio);
+                    }}
+                    className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 text-black transition hover:border-gray-300 hover:bg-gray-100"
+                    title="Eliminar proyecto"
+                  >
+                    <Trash2 size={16} strokeWidth={2.2} />
+                  </button>
                 </div>
 
                 <p className="truncate text-sm font-medium text-gray-800">
@@ -263,6 +319,39 @@ const [apellidopaterno, setapellidopaterno] = useState<string | null>(() => {
           </div>
         )}
       </main>
+
+      {folioAEliminar !== null && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-xl font-bold text-[#EB0029]">
+              Eliminar proyecto
+            </h3>
+
+            <p className="mb-6 text-sm text-gray-600">
+              ¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cerrarConfirmacionEliminar}
+                disabled={eliminando}
+                className="rounded-lg bg-gray-500 px-5 py-2 text-white transition hover:bg-gray-600 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={confirmarEliminarProyecto}
+                disabled={eliminando}
+                className="rounded-lg bg-[#EB0029] px-5 py-2 text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {eliminando ? "Eliminando..." : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
