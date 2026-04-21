@@ -22,16 +22,23 @@ export interface Riesgo {
 
 export interface ERSData {
   DATOS_GENERALES: DatosGenerales;
+
+
+
   DESCRIPCION_INICIATIVA: string;
   OBJETIVOS_ALCANCE: {
     OBJETIVO: string;
     ALCANCE: string;
   };
+
+
   AREAS_IMPACTADAS: AreaImpactada[];
   TABLA_FR: {
     AREA_PARTICIPANTE: string;
     RESPONSABLE: string;
   };
+
+  
   SUPUESTOS: string | null;
   ANEXOS: string[];
   RESTRICCIONES: string | null;

@@ -197,6 +197,19 @@ export default function FormModal({
     try {
       setSubmittingProject(true);
 
+
+      // Aquí puedes construir el payload que enviarás al backend, usando formData y departamentos para llenar los campos necesarios
+      const departamentosSeleccionados = departamentos.filter((dep) =>
+        formData.departamentos.includes(String(dep.iddepartamento))
+      );
+
+      const nombresDepartamentos = departamentosSeleccionados.map((dep) => dep.nombre);
+
+      const areasImpactadasConNombre = departamentosSeleccionados.map((dep) => ({
+        AREA_NEGOCIO: dep.nombre,
+        PROCESO_IMPACTO: null,
+      }));
+
       const payload = {
         formulario: {
           solicitante: formData.solicitante || null,
@@ -206,7 +219,7 @@ export default function FormModal({
           nombre_socio_negocio: formData.socio || null,
           cr: formData.cr || null,
           nombre_iniciativa: formData.iniciativa || null,
-          departamentos_impactados: formData.departamentos,
+          departamentos_impactados: nombresDepartamentos,
           tipo_iniciativa: formData.tipo || null,
           usuario_nombre: null,
           usuario_id: tempUserId || localStorage.getItem("idusuario") || null,
@@ -227,7 +240,7 @@ export default function FormModal({
             OBJETIVO: null,
             ALCANCE: null,
           },
-          AREAS_IMPACTADAS: [],
+          AREAS_IMPACTADAS: areasImpactadasConNombre,
           TABLA_FR: {
             AREA_PARTICIPANTE: null,
             RESPONSABLE: null,
@@ -305,11 +318,11 @@ export default function FormModal({
       console.log("✅ RESPONSE DEL BACKEND:");
       console.log(data);
 
+
       if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.detail || "No se pudo crear el proyecto.");
+        throw new Error(data?.detail || "No se pudo crear el proyecto.");
       }
-      
+
       console.log("Proyecto creado:", data);
 
       sessionStorage.setItem(
