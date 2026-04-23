@@ -1,9 +1,10 @@
 "use client";
 
-import { LayoutGrid, SendHorizonal, Bot, User, X } from "lucide-react";
+import { LayoutGrid, SendHorizonal, Bot, User, X, LayoutDashboard} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import WidgetsModal from "@/components/WidgetsModal";
+import WidgetsModal from "./WidgetsModal";
 import FormModal from "./FormModal";
+
 
 type Msg = {
   id: number;
@@ -12,10 +13,11 @@ type Msg = {
 };
 
 export default function ChatBot() {
-  const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
 
+  const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
+    
     { id: 1, role: "bot", text: "Hola 👋 Soy tu asistente. ¿En qué te puedo ayudar?" },
   ]);
 
@@ -368,22 +370,22 @@ export default function ChatBot() {
           <div ref={endRef} />
         </div>
 
-        {/* input + widgets */}
-        <div className="mt-5 flex items-center gap-3 relative">
-          <div className="relative flex-1">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder={
-                userId && sessionId
-                  ? "Escribe tu pregunta..."
+       {/* input + widgets */}
+<div className="mt-5 flex items-center gap-3 relative">
+  <div className="relative flex-1">
+    <input
+      ref={inputRef}
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          send();
+        }
+      }}
+      placeholder={
+        userId && sessionId
+          ? "Escribe tu pregunta..."
                   : "Primero inicia sesión"
               }
               disabled={!userId || !sessionId}
@@ -400,9 +402,23 @@ export default function ChatBot() {
             </button>
           </div>
 
-        </div>
-      </div>
+          {/* Aquí agregamos el botón Widgets en la misma fila */}
+          {/* Botón Widgets */}
+        {/* Botón Widgets en la misma fila */}
+  <button 
+    onClick={() => setIsWidgetsOpen(!isWidgetsOpen)} 
+    className="widgets-btn bg-[#EB0029] text-white font-semibold text-sm px-5 py-3 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+  >
+    <LayoutDashboard size={20} className="mr-1" />
+    Widgets
+  </button>
+</div>
 
+          {/* Widgets modal */}
+          
+          {isWidgetsOpen && <WidgetsModal isOpen={isWidgetsOpen} onClose={() => setIsWidgetsOpen(false)} />}
+
+      </div>
       <FormModal
         isOpen={showLoginModal}
         tempUserId={tempUserId}
