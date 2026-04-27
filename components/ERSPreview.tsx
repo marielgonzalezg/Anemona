@@ -19,7 +19,7 @@ export default function ERSPreview({
     return <div className="p-8">Cargando documento...</div>;
   }
 
-    const highlight = (path: string) =>
+  const highlight = (path: string) =>
     changedFields?.has(path)
       ? "bg-yellow-200 transition-all duration-700"
       : "";
@@ -391,24 +391,54 @@ export default function ERSPreview({
   );
 }
 
+// PAGE_CONTENT_HEIGHT: altura del área de contenido en px (sin header ni footer)
+// Header: 110px, Footer: 90px, Total hoja: 1056px → Contenido: 856px
+const PAGE_CONTENT_HEIGHT = 856;
+
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto mb-8 h-[1056px] w-[816px] overflow-hidden border border-gray-300 bg-white shadow-md">
+    <div className="mx-auto mb-8 w-[816px] border border-gray-300 bg-white shadow-md">
       <HeaderBand />
 
-      <div
-        className="text-black text-[13px] leading-[1.28]"
-        style={{
-          height: "856px",
-          paddingTop: "24px",
-          paddingBottom: "24px",
-          paddingLeft: "47px",
-          paddingRight: "51px",
-          boxSizing: "border-box",
-          overflow: "hidden",
-        }}
-      >
-        {children}
+      {/* Contenedor de contenido: scrolleable, con línea de salto de página */}
+      <div className="relative" style={{ paddingTop: 0 }}>
+        {/* Línea de salto de página — a 856px desde el top del área de contenido */}
+        <div
+          className="pointer-events-none absolute left-0 right-0 z-10"
+          style={{ top: `${PAGE_CONTENT_HEIGHT}px` }}
+        >
+          {/* Línea punteada */}
+          <div
+            style={{
+              borderTop: "2px dashed #f87171",
+              width: "100%",
+            }}
+          />
+          {/* Etiqueta */}
+          <div className="flex justify-end pr-3">
+            <span
+              className="rounded-b bg-red-100 px-2 py-[2px] text-[10px] font-medium text-red-500"
+              style={{ letterSpacing: "0.03em" }}
+            >
+              ↑ salto de página
+            </span>
+          </div>
+        </div>
+
+        {/* Contenido scrolleable */}
+        <div
+          className="overflow-y-auto text-black text-[13px] leading-[1.28]"
+          style={{
+            maxHeight: `${PAGE_CONTENT_HEIGHT + 120}px`, // un poco más para ver contenido desbordado
+            paddingTop: "24px",
+            paddingBottom: "24px",
+            paddingLeft: "47px",
+            paddingRight: "51px",
+            boxSizing: "border-box",
+          }}
+        >
+          {children}
+        </div>
       </div>
 
       <FooterBand />
