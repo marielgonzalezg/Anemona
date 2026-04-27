@@ -38,6 +38,10 @@ export default function ProyectosDashboard() {
   const router = useRouter();
   const [folioAEliminar, setFolioAEliminar] = useState<number | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
 
   // Filtros
   const [filtroFolio, setFiltroFolio] = useState("");
@@ -50,6 +54,50 @@ export default function ProyectosDashboard() {
     setFiltroNombre("");
     setFiltroFecha("");
     setFiltroArea("");
+  };
+
+  const buscarConAgente = async () => {
+    if (!idusuario || !aiPrompt.trim()) return;
+
+    try {
+      setLoadingAI(true);
+      setAiMessage("");
+
+      const res = await fetch(
+        `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos/buscar-con-agente-local`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mensaje: aiPrompt,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "No se pudo buscar con el agente");
+      }
+
+      setProyectos(data.proyectos || []);
+      setAiMessage(data.respuesta_agente || "");
+      setShowAIModal(false);
+      setAiPrompt("");
+
+      limpiarFiltros();
+    } catch (error) {
+      console.error(error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al buscar con el agente"
+      );
+    } finally {
+      setLoadingAI(false);
+    }
   };
 
   const handleOpenProjectChat = (project: Proyecto) => {
@@ -259,6 +307,13 @@ export default function ProyectosDashboard() {
           Limpiar
         </button>
 
+        <button
+          onClick={() => setShowAIModal(true)}
+          className="bg-gray-800 text-white font-semibold text-xs px-3 py-2 rounded-md hover:bg-gray-700 transition mt-3"
+        >
+          Buscar con IA
+        </button>
+
         {/* Logo */}
         <div className="mt-auto flex justify-center pt-4">
           <img src="/images/banortelogo.png" alt="Banorte" className="h-12" />
@@ -267,6 +322,11 @@ export default function ProyectosDashboard() {
 
       {/* ── MAIN GRID ── */}
       <main className="flex flex-1 flex-col overflow-hidden p-6">
+        {aiMessage && (
+          <div className="mb-4 rounded-lg bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
+            {aiMessage}
+          </div>
+        )}
         {loading ? (
           <div className="flex h-full items-center justify-center text-sm text-gray-400">
             Cargando proyectos...
@@ -351,6 +411,45 @@ export default function ProyectosDashboard() {
           </div>
         </div>
       )}
+
+      {showAIModal && (
+      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
+        <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+          <h3 className="mb-2 text-xl font-bold text-[#EB0029]">
+            Buscar proyectos con IA
+          </h3>
+
+          <p className="mb-4 text-sm text-gray-600">
+            Escribe lo que recuerdes del proyecto. Por ejemplo: proyectos de Banorte creados en abril.
+          </p>
+
+          <textarea
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder="Ej. Busca proyectos de Banorte en abril"
+            className="h-32 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-[#EB0029]"
+          />
+
+          <div className="mt-5 flex justify-end gap-3">
+            <button
+              onClick={() => setShowAIModal(false)}
+              disabled={loadingAI}
+              className="rounded-lg bg-gray-500 px-5 py-2 text-white transition hover:bg-gray-600 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              onClick={buscarConAgente}
+              disabled={loadingAI || !aiPrompt.trim()}
+              className="rounded-lg bg-[#EB0029] px-5 py-2 text-white transition hover:bg-red-700 disabled:opacity-50"
+            >
+              {loadingAI ? "Buscando..." : "Buscar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     </div>
   );
