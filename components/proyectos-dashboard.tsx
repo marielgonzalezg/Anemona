@@ -33,6 +33,7 @@ export default function ProyectosDashboard() {
 
 
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
+  const [proyectosOriginales, setProyectosOriginales] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Usuario");
   const router = useRouter();
@@ -54,6 +55,8 @@ export default function ProyectosDashboard() {
     setFiltroNombre("");
     setFiltroFecha("");
     setFiltroArea("");
+    setAiMessage("");
+    setProyectos(proyectosOriginales);
   };
 
   const buscarConAgente = async () => {
@@ -87,7 +90,10 @@ export default function ProyectosDashboard() {
       setShowAIModal(false);
       setAiPrompt("");
 
-      limpiarFiltros();
+      setFiltroFolio("");
+      setFiltroNombre("");
+      setFiltroFecha("");
+      setFiltroArea("");
     } catch (error) {
       console.error(error);
       alert(
@@ -178,6 +184,7 @@ export default function ProyectosDashboard() {
         console.log("DATA:", data);
 
         setProyectos(data);
+        setProyectosOriginales(data);
       } catch (error) {
         console.error(error);
       } finally {
