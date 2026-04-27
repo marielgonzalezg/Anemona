@@ -9,7 +9,9 @@ import {
   X,
 } from "lucide-react";
 import ERSPreview from "@/components/ERSPreview";
-import type { ERSData } from "@/types/  ers";
+import type { ERSData, ERSWidgetsResponse, WidgetFromApi } from "@/types/  ers";
+import WidgetRenderer from "./DynamicVisor";
+import { Widget } from "./widgets/BibliotecaWidgets";
 
 const DRAWIO_EMBED_URL =
   "https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagramaarq.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1K0pWBSO4_RdxmUlAippvNTiQZfnkcoSJ%26export%3Ddownload";
@@ -33,7 +35,6 @@ function DownloadPopup({
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
-
       <div className="relative mx-4 flex min-w-[300px] max-w-sm animate-in zoom-in fade-in flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-2xl duration-200">
         <button
           onClick={onClose}
@@ -41,11 +42,9 @@ function DownloadPopup({
         >
           <X size={18} />
         </button>
-
         <div className="rounded-full bg-green-100 p-4">
           <CheckCircle className="text-green-500" size={36} />
         </div>
-
         <div className="text-center">
           <h2 className="mb-1 text-lg font-bold text-gray-800">
             ¡Descarga exitosa!
@@ -55,7 +54,6 @@ function DownloadPopup({
             descargado correctamente.
           </p>
         </div>
-
         <button
           onClick={onClose}
           className="mt-2 rounded-full bg-[#EB0029] px-8 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#c8001f]"
@@ -79,151 +77,69 @@ export default function Documentacion({
   const [ersData, setErsData] = useState<ERSData | null>(null);
   const [loadingERS, setLoadingERS] = useState(true);
   const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
+  const [widgets, setWidgets] = useState<Widget[]>([]);
 
-  // bajar por id de doc
   const getActiveProjectId = () => {
-  if (typeof window === "undefined") return "";
-  return sessionStorage.getItem("project_id") || "";
-};
-
-  const detectChanges = (oldData: any, newData: any) => {
-  const changed = new Set<string>();
-
-  const compare = (obj1: any, obj2: any, path = "") => {
-    if (Array.isArray(obj2)) {
-      obj2.forEach((item, index) => {
-        const newPath = path ? `${path}.${index}` : `${index}`;
-
-        if (typeof item === "object" && item !== null) {
-          compare(obj1?.[index], item, newPath);
-        } else if (obj1?.[index] !== item) {
-          changed.add(newPath);
-        }
-      });
-      return;
-    }
-
-    for (const key in obj2) {
-      const newPath = path ? `${path}.${key}` : key;
-
-      if (typeof obj2[key] === "object" && obj2[key] !== null) {
-        compare(obj1?.[key], obj2[key], newPath);
-      } else if (obj1?.[key] !== obj2[key]) {
-        changed.add(newPath);
-      }
-    }
+    if (typeof window === "undefined") return "";
+    return sessionStorage.getItem("project_id") || "";
   };
 
-  compare(oldData, newData);
-  return changed;
-};
+  const mapErsDataToWidgets = (data: ERSWidgetsResponse["data"]): Widget[] => {
+    const { posiciones, ...widgetMap } = data;
 
-const fetchERS = async (
-  isMounted = true,
-  timeoutRef?: { current: ReturnType<typeof setTimeout> | null }
-) => {
-  try {
-    const docId = getActiveProjectId();
+    if (!posiciones || !Array.isArray(posiciones)) return [];
 
-    if (!docId) {
-      setErsData(null);
-      return;
-    }
-
-    const response = await fetch(
-      `http://127.0.0.1:8000/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
-      {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-        },
-        cache: "no-store",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("No se pudo obtener el ERS");
-    }
-
-    const json = await response.json();
-
-    if (isMounted && json.ok && json.data) {
-      setErsData((prev) => {
-        if (!prev) return json.data;
-
-        const changes = detectChanges(prev, json.data);
-
-        if (changes.size > 0) {
-          setChangedFields(changes);
-
-          if (timeoutRef?.current) clearTimeout(timeoutRef.current);
-          timeoutRef &&
-            (timeoutRef.current = setTimeout(() => {
-              setChangedFields(new Set());
-            }, 5000));
-
-          return json.data;
-        }
-
-        return prev;
-      });
-    }
-  } catch (error) {
-    console.error("Error cargando ERS:", error);
-  } finally {
-    if (isMounted) {
-      setLoadingERS(false);
-    }
-  }
-};
+    return posiciones.map((widgetId: string, index: number) => {
+      const widgetData = widgetMap[widgetId] as WidgetFromApi;
+      return {
+        posicion: index + 1,
+        id_widget: widgetId,
+        titulo: widgetData.titulo ?? widgetId,
+        objetivo_widget: widgetData.objetivo_widget ?? "",
+        descripcion_campos: widgetData.descripcion_campos ?? {},
+        campos: widgetData.campos ?? {},
+      };
+    });
+  };
 
   useEffect(() => {
-  let isMounted = true;
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  const detectChanges = (oldData: any, newData: any) => {
-    const changed = new Set<string>();
+    const detectChanges = (oldData: any, newData: any) => {
+      const changed = new Set<string>();
 
-    const compare = (obj1: any, obj2: any, path = "") => {
-      if (Array.isArray(obj2)) {
-        obj2.forEach((item, index) => {
-          const newPath = path ? `${path}.${index}` : `${index}`;
-
-          if (typeof item === "object" && item !== null) {
-            compare(obj1?.[index], item, newPath);
-          } else if (obj1?.[index] !== item) {
+      const compare = (obj1: any, obj2: any, path = "") => {
+        if (Array.isArray(obj2)) {
+          obj2.forEach((item, index) => {
+            const newPath = path ? `${path}.${index}` : `${index}`;
+            if (typeof item === "object" && item !== null) {
+              compare(obj1?.[index], item, newPath);
+            } else if (obj1?.[index] !== item) {
+              changed.add(newPath);
+            }
+          });
+          return;
+        }
+        for (const key in obj2) {
+          const newPath = path ? `${path}.${key}` : key;
+          if (typeof obj2[key] === "object" && obj2[key] !== null) {
+            compare(obj1?.[key], obj2[key], newPath);
+          } else if (obj1?.[key] !== obj2[key]) {
             changed.add(newPath);
           }
-        });
-        return;
-      }
-
-      for (const key in obj2) {
-        const newPath = path ? `${path}.${key}` : key;
-
-        if (typeof obj2[key] === "object" && obj2[key] !== null) {
-          compare(obj1?.[key], obj2[key], newPath);
-        } else if (obj1?.[key] !== obj2[key]) {
-          changed.add(newPath);
         }
-      }
+      };
+
+      compare(oldData, newData);
+      return changed;
     };
 
-    compare(oldData, newData);
-    return changed;
-  };
-
-  const fetchERS = async () => {
+    const fetchERS = async () => {
   try {
-    const docId = getActiveProjectId();
-
-    if (!docId) {
-      setErsData(null);
-      return;
-    }
-
+    // TEMPORAL - hardcodeo para probar
     const response = await fetch(
-      `http://127.0.0.1:8000/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
+      `http://127.0.0.1:8000/firestore/bajar?doc_id=5PmuVc79xxDuwTN4D0my`,
       {
         method: "GET",
         headers: { accept: "application/json" },
@@ -231,63 +147,62 @@ const fetchERS = async (
       }
     );
 
-    if (!response.ok) {
-      throw new Error("No se pudo obtener el ERS");
-    }
+    if (!response.ok) throw new Error("No se pudo obtener el ERS");
 
     const json = await response.json();
+    console.log("json.data →", json.data);        // ← ¿aparece en consola?
+    console.log("posiciones →", json.data?.posiciones); // ← ¿tiene array?
 
     if (isMounted && json.ok && json.data) {
-      setErsData((prev) => {
-        if (!prev) return json.data;
+          setErsData((prev) => {
+            if (!prev) return json.data;
 
-        const changes = detectChanges(prev, json.data);
+            const changes = detectChanges(prev, json.data);
 
-        if (changes.size > 0) {
-          setChangedFields(changes);
+            if (changes.size > 0) {
+              setChangedFields(changes);
+              if (timeoutId) clearTimeout(timeoutId);
+              timeoutId = setTimeout(() => {
+                if (isMounted) setChangedFields(new Set());
+              }, 5000);
+              return json.data;
+            }
 
-          if (timeoutId) clearTimeout(timeoutId);
-          timeoutId = setTimeout(() => {
-            if (isMounted) setChangedFields(new Set());
-          }, 5000);
+            return prev;
+          });
 
-          return json.data;
+          if (json.data.posiciones) {
+            const mapped = mapErsDataToWidgets(json.data);
+            setWidgets(mapped);
+          }
         }
+      } catch (error) {
+        console.error("Error cargando ERS:", error);
+      } finally {
+        if (isMounted) setLoadingERS(false);
+      }
+    };
 
-        return prev;
-      });
-    }
-  } catch (error) {
-    console.error("Error cargando ERS:", error);
-  } finally {
-    if (isMounted) setLoadingERS(false);
-  }
-};
+    const handleRefresh = () => fetchERS();
 
-  const handleRefresh = () => {
     fetchERS();
-  };
 
-  // primera carga
-  fetchERS();
+    window.addEventListener("ers-refresh", handleRefresh);
+    window.addEventListener("chat-session-changed", handleRefresh);
 
-  // escuchar evento del chat
-  window.addEventListener("ers-refresh", handleRefresh);
-window.addEventListener("chat-session-changed", handleRefresh);
-
-return () => {
-  isMounted = false;
-  window.removeEventListener("ers-refresh", handleRefresh);
-  window.removeEventListener("chat-session-changed", handleRefresh);
-  if (timeoutId) clearTimeout(timeoutId);
-};
-}, []);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("ers-refresh", handleRefresh);
+      window.removeEventListener("chat-session-changed", handleRefresh);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
 
   const wrapperClass = expanded
     ? "flex-1 h-full min-w-[520px] transition-all duration-300"
     : "w-full max-w-xs h-full transition-all duration-300";
 
-const activeUrl = DRAWIO_EMBED_URL;
+  const activeUrl = DRAWIO_EMBED_URL;
 
   const handleDownload = async () => {
     try {
@@ -313,7 +228,6 @@ const activeUrl = DRAWIO_EMBED_URL;
       setShowPopup(true);
     }
   };
-
   return (
     <>
       {showPopup && (
@@ -364,7 +278,10 @@ const activeUrl = DRAWIO_EMBED_URL;
                               Cargando ERS...
                             </div>
                           ) : (
-                            <ERSPreview data={ersData} changedFields={changedFields} />
+                            <>
+                             {/* <ERSPreview data={ersData} changedFields={changedFields} /> */}
+                              <WidgetRenderer widgets={widgets} />
+                            </>
                           )}
                         </div>
                       ) : (
@@ -438,7 +355,10 @@ const activeUrl = DRAWIO_EMBED_URL;
                         Cargando documento...
                       </div>
                     ) : (
-                      <ERSPreview data={ersData} changedFields={changedFields} />
+                      <>
+                       {/* <ERSPreview data={ersData} changedFields={changedFields} /> */}
+                        <WidgetRenderer widgets={widgets} />
+                      </>
                     )}
                   </div>
                 ) : (
