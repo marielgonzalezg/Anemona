@@ -1,7 +1,13 @@
 "use client";
 
+// ─── Relaciones con otros archivos ───────────────────────────────────────────
+// - Usado en: Documentacion.tsx (vista normal sin drop zones)
+// - Usado en: WidgetsModal.tsx  (consume buildBlocks, Page, USABLE_HEIGHT)
+// - Tipos de datos: @/types/ers (ERSData)
+// ─────────────────────────────────────────────────────────────────────────────
+
 import type { ERSData } from "@/types/  ers";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 /* ─────────────────────────────────────────
    Helpers
@@ -13,14 +19,18 @@ const showValue = (value: unknown, fallback = "N/A") => {
 };
 
 /* ─────────────────────────────────────────
-   Constantes de layout
+   Constantes de layout — exportadas para WidgetsModal
+   816px = ancho de hoja
+   110px header + 90px footer = 200px fijos
+   856px = área de contenido entre header y footer
+   808px = área útil (856 - 24 paddingTop - 24 paddingBottom)
 ───────────────────────────────────────── */
 const PAGE_CONTENT_HEIGHT = 856;
 const PAGE_PADDING_V = 48;
-export const USABLE_HEIGHT = PAGE_CONTENT_HEIGHT - PAGE_PADDING_V; // 808px — exportado para WidgetsModal
+export const USABLE_HEIGHT = PAGE_CONTENT_HEIGHT - PAGE_PADDING_V; // 808px
 
 /* ─────────────────────────────────────────
-   Tipos exportados
+   Tipo de bloque — exportado para WidgetsModal
 ───────────────────────────────────────── */
 export type BlockDef = {
   id: string;
@@ -28,7 +38,9 @@ export type BlockDef = {
 };
 
 /* ─────────────────────────────────────────
-   buildBlocks — exportado para WidgetsModal
+   buildBlocks — construye la lista ordenada de bloques del documento
+   Exportado para que WidgetsModal pueda consumirlo directamente
+   y mezclar bloques con widgets insertados por el usuario
 ───────────────────────────────────────── */
 export function buildBlocks(
   data: ERSData,
@@ -202,10 +214,7 @@ export function buildBlocks(
         </table>
       ),
     },
-    {
-      id: "seccion_5",
-      node: <SectionLine number="5." title="Beneficios." />,
-    },
+    { id: "seccion_5", node: <SectionLine number="5." title="Beneficios." /> },
     {
       id: "beneficios",
       node: (
@@ -215,18 +224,9 @@ export function buildBlocks(
         </>
       ),
     },
-    {
-      id: "seccion_6",
-      node: <SectionLine number="6." title="Participación de otras áreas." />,
-    },
-    {
-      id: "participacion",
-      node: <EmptyBlock>{showValue(data.PARTICIPACION_OTRAS_AREAS, "")}</EmptyBlock>,
-    },
-    {
-      id: "seccion_6_1",
-      node: <SubSection title="6.1 Riesgos." note="(Obligatorio)" noteColor="text-red-600" />,
-    },
+    { id: "seccion_6", node: <SectionLine number="6." title="Participación de otras áreas." /> },
+    { id: "participacion", node: <EmptyBlock>{showValue(data.PARTICIPACION_OTRAS_AREAS, "")}</EmptyBlock> },
+    { id: "seccion_6_1", node: <SubSection title="6.1 Riesgos." note="(Obligatorio)" noteColor="text-red-600" /> },
     {
       id: "riesgos",
       node: (
@@ -254,43 +254,20 @@ export function buildBlocks(
         </table>
       ),
     },
-    {
-      id: "seccion_7",
-      node: <SectionLine number="7." title="Exclusiones." note="(Únicamente si aplica)" noteColor="text-sky-500" />,
-    },
-    {
-      id: "exclusiones",
-      node: <EmptyBlock>{showValue(data.EXCLUSIONES, "")}</EmptyBlock>,
-    },
-    {
-      id: "seccion_8",
-      node: <SectionLine number="8." title="Supuestos." note="(Únicamente si aplica)" noteColor="text-sky-500" />,
-    },
-    {
-      id: "supuestos",
-      node: <EmptyBlock>{showValue(data.SUPUESTOS, "")}</EmptyBlock>,
-    },
-    {
-      id: "seccion_9",
-      node: <SectionLine number="9." title="Restricciones." note="(Únicamente si aplica)" noteColor="text-sky-500" />,
-    },
-    {
-      id: "restricciones",
-      node: <EmptyBlock>{showValue(data.RESTRICCIONES, "")}</EmptyBlock>,
-    },
-    {
-      id: "seccion_10",
-      node: <SectionLine number="10." title="Anexos." note="(Opcional)" noteColor="text-green-600" />,
-    },
-    {
-      id: "anexos",
-      node: <EmptyBlock>{showValue(data.ANEXOS, "")}</EmptyBlock>,
-    },
+    { id: "seccion_7", node: <SectionLine number="7." title="Exclusiones." note="(Únicamente si aplica)" noteColor="text-sky-500" /> },
+    { id: "exclusiones", node: <EmptyBlock>{showValue(data.EXCLUSIONES, "")}</EmptyBlock> },
+    { id: "seccion_8", node: <SectionLine number="8." title="Supuestos." note="(Únicamente si aplica)" noteColor="text-sky-500" /> },
+    { id: "supuestos", node: <EmptyBlock>{showValue(data.SUPUESTOS, "")}</EmptyBlock> },
+    { id: "seccion_9", node: <SectionLine number="9." title="Restricciones." note="(Únicamente si aplica)" noteColor="text-sky-500" /> },
+    { id: "restricciones", node: <EmptyBlock>{showValue(data.RESTRICCIONES, "")}</EmptyBlock> },
+    { id: "seccion_10", node: <SectionLine number="10." title="Anexos." note="(Opcional)" noteColor="text-green-600" /> },
+    { id: "anexos", node: <EmptyBlock>{showValue(data.ANEXOS, "")}</EmptyBlock> },
   ];
 }
 
 /* ─────────────────────────────────────────
-   Componente principal — usado en Documentacion.tsx
+   ERSPreview — componente default
+   Usado en Documentacion.tsx para mostrar el doc sin interacción
 ───────────────────────────────────────── */
 export default function ERSPreview({
   data,
@@ -303,50 +280,28 @@ export default function ERSPreview({
   const [measured, setMeasured] = useState(false);
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  useEffect(() => {
-    setMeasured(false);
-    setPages([]);
-  }, [data]);
-
+  // highlight: resalta campos modificados por el chat (usado en Documentacion.tsx)
   const highlight = (path: string) =>
     changedFields?.has(path) ? "bg-yellow-200 transition-all duration-700" : "";
 
-  if (!data) return <div className="p-8">Cargando documento...</div>;
-
-  const blocks = buildBlocks(data, highlight);
-
-  return (
-    <PaginatedDocument
-      blocks={blocks}
-      measured={measured}
-      setMeasured={setMeasured}
-      setPages={setPages}
-      pages={pages}
-      measureRefs={measureRefs}
-    />
+  // useMemo evita que buildBlocks recree el array en cada render,
+  // lo que causaba el loop infinito en el useEffect de paginación
+  const blocks = useMemo(
+    () => (data ? buildBlocks(data, highlight) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data, changedFields]
   );
-}
 
-/* ─────────────────────────────────────────
-   PaginatedDocument
-───────────────────────────────────────── */
-export function PaginatedDocument({
-  blocks,
-  measured,
-  setMeasured,
-  setPages,
-  pages,
-  measureRefs,
-}: {
-  blocks: BlockDef[];
-  measured: boolean;
-  setMeasured: (v: boolean) => void;
-  setPages: (p: BlockDef[][]) => void;
-  pages: BlockDef[][];
-  measureRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
-}) {
+  // Resetear paginación cuando cambia el contenido del documento
   useEffect(() => {
-    if (measured) return;
+    setMeasured(false);
+    setPages([]);
+  }, [blocks]);
+
+  // Algoritmo de paginación greedy:
+  // Acumula bloques en una página hasta superar USABLE_HEIGHT, luego abre una nueva
+  useEffect(() => {
+    if (measured || blocks.length === 0) return;
 
     const raf = requestAnimationFrame(() => {
       const heights = measureRefs.current.map((el) => el?.offsetHeight ?? 0);
@@ -374,8 +329,11 @@ export function PaginatedDocument({
     });
 
     return () => cancelAnimationFrame(raf);
-  }, [blocks, measured, measureRefs, setMeasured, setPages]);
+  }, [blocks, measured]);
 
+  if (!data) return <div className="p-8">Cargando documento...</div>;
+
+  // Fase 1: render invisible para medir + spinner
   if (!measured) {
     return (
       <div className="w-full bg-[#ececec] py-8 px-4">
@@ -386,17 +344,10 @@ export function PaginatedDocument({
           </svg>
           Calculando paginación...
         </div>
+        {/* Render fuera de pantalla para medir alturas reales de cada bloque */}
         <div
           aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "-9999px",
-            visibility: "hidden",
-            pointerEvents: "none",
-            width: "716px",
-            zIndex: -1,
-          }}
+          style={{ position: "absolute", top: 0, left: "-9999px", visibility: "hidden", pointerEvents: "none", width: "716px", zIndex: -1 }}
         >
           {blocks.map((block, i) => (
             <div key={block.id} ref={(el) => { measureRefs.current[i] = el; }}>
@@ -408,6 +359,7 @@ export function PaginatedDocument({
     );
   }
 
+  // Fase 2: render paginado final
   return (
     <div className="w-full bg-[#ececec] py-8 px-4">
       {pages.map((pageBlocks, pageIndex) => (
@@ -422,16 +374,26 @@ export function PaginatedDocument({
 }
 
 /* ─────────────────────────────────────────
-   Page
+   Page — hoja con header y footer
+   Exportado para que WidgetsModal lo use también
+   Sin scroll interno: la página crece con su contenido
 ───────────────────────────────────────── */
 export function Page({ children }: { children: React.ReactNode }) {
+  // Hoja carta en pantalla: 816px ancho × 1056px alto (proporción 1:1.294)
+  // Header 110px + contenido 856px + footer 90px = 1056px total
   return (
-    <div className="mx-auto mb-8 w-[816px] border border-gray-300 bg-white shadow-md">
+    <div
+      className="mx-auto mb-8 w-[816px] border border-gray-300 bg-white shadow-md"
+      style={{ height: "1056px", overflow: "hidden" }}
+    >
       <HeaderBand />
+      {/* overflow: hidden — lo que no cabe en 808px útiles no se muestra.
+          El algoritmo de paginación garantiza que el contenido siempre quepa */}
       <div
-        className="overflow-y-auto text-black text-[13px] leading-[1.28]"
+        className="text-black text-[13px] leading-[1.28]"
         style={{
-          maxHeight: `${PAGE_CONTENT_HEIGHT + 80}px`,
+          height: "856px",
+          overflow: "hidden",
           paddingTop: "24px",
           paddingBottom: "24px",
           paddingLeft: "47px",
@@ -447,7 +409,8 @@ export function Page({ children }: { children: React.ReactNode }) {
 }
 
 /* ─────────────────────────────────────────
-   Sub-componentes visuales — exportados para WidgetRenderer
+   Sub-componentes visuales
+   Todos exportados para ser reutilizados en WidgetRenderer.tsx
 ───────────────────────────────────────── */
 export function HeaderBand() {
   return (

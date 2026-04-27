@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+// ─── Relaciones con otros archivos ───────────────────────────────────────────
+// - Importa de ERSPreview.tsx: buildBlocks, Page, USABLE_HEIGHT, BlockDef
+// - Importa de WidgetRenderer.tsx: renderizado visual de cada widget
+// - Lee widgetlist.json para saber qué widgets hay disponibles
+// - Lee sessionStorage["project_id"] para saber qué doc cargar de Firestore
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   buildBlocks,
   Page,
@@ -25,16 +32,21 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
   const [srsData, setSrsData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Lista ordenada de bloques — mezcla de bloques del doc y widgets insertados
+  // mergedBlocks: lista ordenada de todos los bloques (doc original + widgets insertados)
+  // Es la fuente de verdad del orden del documento
   const [mergedBlocks, setMergedBlocks] = useState<BlockDef[]>([]);
+
+  // pages: resultado del algoritmo de paginación sobre mergedBlocks
   const [pages, setPages] = useState<BlockDef[][]>([]);
   const [measured, setMeasured] = useState(false);
+
+  // measureRefs: refs para medir la altura real de cada bloque en el DOM
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [draggingWidget, setDraggingWidget] = useState<Widget | null>(null);
   const [activeDropZone, setActiveDropZone] = useState<number | null>(null);
 
-  /* ── Cargar doc desde Firestore ── */
+  /* ── Cargar documento desde Firestore ── */
   useEffect(() => {
     if (!isOpen) return;
 
@@ -57,9 +69,7 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
         );
         if (!res.ok) throw new Error("Error en la respuesta del servidor");
         const json = await res.json();
-        if (json.ok && json.data) {
-          setSrsData(json.data);
-        }
+        if (json.ok && json.data) setSrsData(json.data);
       } catch (e) {
         console.error("Error cargando SRS:", e);
       } finally {
@@ -70,23 +80,29 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
     load();
   }, [isOpen]);
 
-  /* ── Inicializar mergedBlocks cuando llega srsData ── */
-  useEffect(() => {
-    if (!srsData) return;
-    const blocks = buildBlocks(srsData, () => "");
-    setMergedBlocks(blocks);
-    setMeasured(false);
-    setPages([]);
-  }, [srsData]);
+  /* ── Inicializar mergedBlocks cuando llega srsData ──
+     useMemo evita recrear el array en cada render (evita loop infinito) */
+  const initialBlocks = useMemo(
+    () => (srsData ? buildBlocks(srsData, () => "") : []),
+    [srsData]
+  );
 
-  /* ── Re-paginar cuando cambian los bloques ── */
+  useEffect(() => {
+    if (initialBlocks.length === 0) return;
+    setMergedBlocks(initialBlocks);
+  }, [initialBlocks]);
+
+  /* ── Resetear paginación cuando mergedBlocks cambia (nuevo widget insertado) ── */
   useEffect(() => {
     if (mergedBlocks.length === 0) return;
     setMeasured(false);
     setPages([]);
+    // Limpiar refs para que el nuevo render invisible pueda medir bien
+    measureRefs.current = [];
   }, [mergedBlocks]);
 
-  /* ── Algoritmo de paginación ── */
+  /* ── Algoritmo de paginación greedy ──
+     Corre después de que el render invisible puso los bloques en el DOM */
   useEffect(() => {
     if (measured || mergedBlocks.length === 0) return;
 
@@ -99,6 +115,7 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
 
       mergedBlocks.forEach((block, i) => {
         const h = heights[i];
+        // Si agregar este bloque supera la altura útil, abrir nueva página
         if (currentHeight + h > USABLE_HEIGHT && currentPage.length > 0) {
           result.push(currentPage);
           currentPage = [block];
@@ -118,20 +135,20 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
     return () => cancelAnimationFrame(raf);
   }, [measured, mergedBlocks]);
 
-  /* ── Log en consola del JSON resultante ── */
+  /* ── Log del JSON resultante cada vez que se re-pagina ── */
   useEffect(() => {
     if (!measured || !srsData) return;
 
-    const orden = mergedBlocks.map((b) => ({
+    const ordenBloques = mergedBlocks.map((b) => ({
       id: b.id,
-      tipo: b.id.startsWith("widget_") ? "widget" : "bloque_original",
+      tipo: b.id.startsWith("widget_drop_") ? "widget_insertado" : "bloque_original",
     }));
 
     console.log("📄 DOCUMENTO CON WIDGETS INSERTADOS:");
-    console.log(JSON.stringify({ plantilla_original: srsData, orden_bloques: orden }, null, 2));
+    console.log(JSON.stringify({ plantilla_original: srsData, orden_bloques: ordenBloques }, null, 2));
   }, [measured, mergedBlocks, srsData]);
 
-  /* ── Drag handlers ── */
+  /* ── Drag & Drop handlers ── */
   function handleDragStart(widget: Widget) {
     setDraggingWidget(widget);
   }
@@ -141,21 +158,26 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
     setActiveDropZone(null);
   }
 
+  // Inserta el widget como un nuevo BlockDef en la posición exacta del drop
   function handleDrop(insertAtIndex: number) {
     if (!draggingWidget) return;
 
     const widgetBlock: BlockDef = {
-      id: `widget_${draggingWidget.id_widget}_${Date.now()}`,
+      // ID único para no colisionar si se arrastra el mismo widget varias veces
+      id: `widget_drop_${draggingWidget.id_widget}_${Date.now()}`,
       node: (
+        // Badge visual que indica que este bloque fue añadido por el usuario
         <div className="relative border border-blue-200 rounded-lg px-4 py-3 mb-2 bg-blue-50/30">
           <span className="absolute top-1 right-2 text-[10px] bg-blue-100 text-blue-500 rounded px-2 py-[1px] font-medium">
             Widget añadido
           </span>
+          {/* WidgetRenderer renderiza el contenido con el mismo estilo que ERSPreview */}
           <WidgetRenderer widget={draggingWidget as any} />
         </div>
       ),
     };
 
+    // Insertar en el índice exacto donde se soltó
     setMergedBlocks((prev) => {
       const next = [...prev];
       next.splice(insertAtIndex, 0, widgetBlock);
@@ -172,7 +194,7 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
       <div className="relative w-[1300px] h-[800px] rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden flex flex-col p-8">
 
-        {/* Decorativas */}
+        {/* Imágenes decorativas del branding */}
         <img src="/images/RedBob.png" className="absolute -top-16 -right-10 w-52 pointer-events-none select-none z-0" alt="" />
         <img src="/images/GreyBob.png" className="absolute top-1/2 -right-10 -translate-y-1/2 w-36 pointer-events-none select-none z-0" alt="" />
         <img src="/images/banortegf.png" className="absolute bottom-3 left-4 w-60 pointer-events-none select-none z-0" alt="" />
@@ -181,7 +203,7 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
 
         <div className="relative z-10 flex space-x-6 h-full">
 
-          {/* Panel izquierdo — documento */}
+          {/* ── Panel izquierdo: documento con drop zones ── */}
           <div className="flex flex-col flex-1 min-w-0">
             <div className="mb-3">
               <h2 className="text-2xl font-bold text-[#EB0029]">Modifica tu plantilla</h2>
@@ -189,14 +211,20 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
             </div>
 
             <div className="flex-1 rounded-3xl bg-[#f9f9f9] overflow-auto border border-dashed border-blue-300">
-              {loading ? (
+              {loading && (
                 <div className="flex h-full items-center justify-center text-sm text-gray-500">Cargando documento...</div>
-              ) : !srsData ? (
+              )}
+
+              {!loading && !srsData && (
                 <div className="flex h-full items-center justify-center text-sm text-gray-400">No se encontró el documento</div>
-              ) : (
+              )}
+
+              {!loading && srsData && (
                 <div className="w-full bg-[#ececec] py-8 px-4">
 
-                  {/* Fase 1: render invisible para medir */}
+                  {/* ── Fase 1: Spinner + render invisible para medir ──
+                      Los bloques se renderizan fuera de pantalla (left: -9999px)
+                      para que el navegador calcule sus alturas reales antes de paginar */}
                   {!measured && (
                     <>
                       <div className="flex items-center justify-center py-16 text-sm text-gray-400">
@@ -208,7 +236,15 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
                       </div>
                       <div
                         aria-hidden="true"
-                        style={{ position: "absolute", top: 0, left: "-9999px", visibility: "hidden", pointerEvents: "none", width: "716px", zIndex: -1 }}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: "-9999px",
+                          visibility: "hidden",
+                          pointerEvents: "none",
+                          width: "716px", // ancho del doc (816px) - padding izq (47) - padding der (51) = 718px aprox
+                          zIndex: -1,
+                        }}
                       >
                         {mergedBlocks.map((block, i) => (
                           <div key={block.id} ref={(el) => { measureRefs.current[i] = el; }}>
@@ -219,60 +255,58 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
                     </>
                   )}
 
-                  {/* Fase 2: render paginado con drop zones entre cada bloque */}
-                  {measured && (
-                    <>
-                      {pages.map((pageBlocks, pageIndex) => {
-                        // Calcular el índice global del primer bloque de esta página
-                        const pageStartIndex = pages
-                          .slice(0, pageIndex)
-                          .reduce((acc, pg) => acc + pg.length, 0);
+                  {/* ── Fase 2: Render paginado con drop zones entre cada bloque ── */}
+                  {measured && pages.map((pageBlocks, pageIndex) => {
+                    // Índice global del primer bloque de esta página
+                    // Necesario para calcular en qué posición del array mergedBlocks insertar
+                    const pageStartIndex = pages
+                      .slice(0, pageIndex)
+                      .reduce((acc, pg) => acc + pg.length, 0);
 
-                        return (
-                          <Page key={pageIndex}>
-                            {pageBlocks.map((block, blockIndexInPage) => {
-                              const globalIndex = pageStartIndex + blockIndexInPage;
-                              return (
-                                <div key={block.id}>
-                                  {/* Drop zone ANTES de este bloque */}
-                                  <DropZone
-                                    index={globalIndex}
-                                    isActive={activeDropZone === globalIndex}
-                                    isDragging={!!draggingWidget}
-                                    onDragOver={() => setActiveDropZone(globalIndex)}
-                                    onDragLeave={() => setActiveDropZone(null)}
-                                    onDrop={() => handleDrop(globalIndex)}
-                                  />
-                                  {block.node}
-                                </div>
-                              );
-                            })}
+                    return (
+                      <Page key={pageIndex}>
+                        {pageBlocks.map((block, blockIndexInPage) => {
+                          const globalIndex = pageStartIndex + blockIndexInPage;
+                          return (
+                            <div key={block.id}>
+                              {/* Drop zone ANTES de cada bloque —
+                                  solo visible cuando hay un widget siendo arrastrado */}
+                              <DropZone
+                                index={globalIndex}
+                                isActive={activeDropZone === globalIndex}
+                                isDragging={!!draggingWidget}
+                                onDragOver={() => setActiveDropZone(globalIndex)}
+                                onDragLeave={() => setActiveDropZone(null)}
+                                onDrop={() => handleDrop(globalIndex)}
+                              />
+                              {block.node}
+                            </div>
+                          );
+                        })}
 
-                            {/* Drop zone al FINAL de la última página */}
-                            {pageIndex === pages.length - 1 && (() => {
-                              const lastIndex = mergedBlocks.length;
-                              return (
-                                <DropZone
-                                  index={lastIndex}
-                                  isActive={activeDropZone === lastIndex}
-                                  isDragging={!!draggingWidget}
-                                  onDragOver={() => setActiveDropZone(lastIndex)}
-                                  onDragLeave={() => setActiveDropZone(null)}
-                                  onDrop={() => handleDrop(lastIndex)}
-                                />
-                              );
-                            })()}
-                          </Page>
-                        );
-                      })}
-                    </>
-                  )}
+                        {/* Drop zone al final de la última página */}
+                        {pageIndex === pages.length - 1 && (() => {
+                          const lastIndex = mergedBlocks.length;
+                          return (
+                            <DropZone
+                              index={lastIndex}
+                              isActive={activeDropZone === lastIndex}
+                              isDragging={!!draggingWidget}
+                              onDragOver={() => setActiveDropZone(lastIndex)}
+                              onDragLeave={() => setActiveDropZone(null)}
+                              onDrop={() => handleDrop(lastIndex)}
+                            />
+                          );
+                        })()}
+                      </Page>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Panel derecho — widgets */}
+          {/* ── Panel derecho: lista de widgets arrastrables ── */}
           <div className="flex flex-col w-[320px] shrink-0">
             <div className="mb-3 flex items-center gap-2">
               <LayoutGrid size={20} className="text-[#EB0029]" />
@@ -292,10 +326,13 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
                       : "border-gray-200 hover:shadow-md hover:border-blue-200"
                     }`}
                 >
+                  {/* Header del widget con ícono de arrastre */}
                   <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 bg-gray-50">
                     <span className="text-gray-300 text-base select-none">⠿</span>
                     <span className="text-sm font-semibold text-gray-700">{widget.titulo}</span>
                   </div>
+
+                  {/* Previsualización escalada — WidgetRenderer con estilo ERSPreview */}
                   <ScaledWidgetPreview widget={widget as Widget} />
                 </div>
               ))}
@@ -309,15 +346,16 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
 }
 
 /* ─────────────────────────────────────────
-   Drop Zone
+   DropZone — zona de soltar entre bloques
+   Solo visible cuando isDragging es true
 ───────────────────────────────────────── */
 function DropZone({
-  index,
   isActive,
   isDragging,
   onDragOver,
   onDragLeave,
   onDrop,
+  index,
 }: {
   index: number;
   isActive: boolean;
@@ -347,7 +385,10 @@ function DropZone({
 }
 
 /* ─────────────────────────────────────────
-   Previsualización escalada del widget
+   ScaledWidgetPreview — previsualización escalada del widget
+   Renderiza WidgetRenderer a 816px de ancho y lo escala a 0.34
+   para que quepa en el panel derecho de 320px
+   Relación: usa WidgetRenderer.tsx para el contenido visual
 ───────────────────────────────────────── */
 const SCALE = 0.34;
 const DOC_WIDTH = 816;
@@ -356,12 +397,15 @@ function ScaledWidgetPreview({ widget }: { widget: Widget }) {
   const innerRef = useRef<HTMLDivElement>(null);
   const [innerHeight, setInnerHeight] = useState(180);
 
+  // Medir la altura real del contenido tras el primer render
   useEffect(() => {
     if (innerRef.current) setInnerHeight(innerRef.current.scrollHeight);
   }, []);
 
   return (
+    // El contenedor externo tiene la altura correcta tras el escalado
     <div style={{ width: "100%", height: `${innerHeight * SCALE}px`, overflow: "hidden", position: "relative" }}>
+      {/* Capa interna a 816px que se escala hacia la esquina superior izquierda */}
       <div style={{ width: `${DOC_WIDTH}px`, transform: `scale(${SCALE})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
         <div
           ref={innerRef}
