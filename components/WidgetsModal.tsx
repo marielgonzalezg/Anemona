@@ -1,11 +1,5 @@
 "use client";
 
-// ─── Relaciones con otros archivos ───────────────────────────────────────────
-// - Importa de BibliotecaWidgets.tsx: renderWXXX y tipo Widget para previews y drops
-// - Lee widgetlist.json para saber qué widgets hay disponibles
-// - Recibe widgets[] como prop desde Documentacion.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useEffect, useRef, useState } from "react";
 import { LayoutGrid } from "lucide-react";
 import widgetList from "./widgetlist.json";
@@ -23,8 +17,6 @@ type WidgetsModalProps = {
   widgets: Widget[];
 };
 
-// Renderiza el nodo visual de un widget según su id
-// onChange permite editar los campos del widget en el documento
 function renderWidgetNode(
   w: Widget,
   onChange: (posicion: number, key: string, value: string) => void
@@ -34,28 +26,28 @@ function renderWidgetNode(
     case "w_001": return renderW001(w, onChange);
     case "w_002": return renderW002(w, onChange);
     case "w_003": return renderW003(w, onChange);
-    default: return (
-      <div className="text-[13px] italic text-gray-400">
-        Widget no reconocido: {w.id_widget}
-      </div>
-    );
+    default: return <div className="text-[13px] italic text-gray-400">Widget no reconocido: {w.id_widget}</div>;
   }
 }
 
 export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalProps) {
-  // Lista de widgets del documento — incluye originales + añadidos por drag
-  const [docWidgets, setDocWidgets] = useState<Widget[]>(widgets);
+  type DocWidget = Widget & { _isNew?: boolean };
+  const [docWidgets, setDocWidgets] = useState<DocWidget[]>(widgets);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [draggingWidget, setDraggingWidget] = useState<(typeof widgetList)[number] | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Sincroniza cuando cambia el proyecto desde Documentacion
-  useEffect(() => {
-    setDocWidgets(widgets);
-  }, [widgets]);
+  // ID del último widget añadido por drag — se resalta en amarillo hasta guardar
+  //const [newWidgetIndices, setNewWidgetIndices] = useState<Set<number>>(new Set());
 
-  // Edita campos de un widget existente en el documento
-  // Permite que los inputs de BibliotecaWidgets funcionen dentro del modal
+  // Para drag and drop de reordenamiento en el panel izquierdo
+  const [draggingDocIndex, setDraggingDocIndex] = useState<number | null>(null);
+  const [reorderDropIndex, setReorderDropIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+  setDocWidgets(widgets);
+}, [widgets]);
+
   function handleChange(posicion: number, key: string, value: string) {
     setDocWidgets((prev) =>
       prev.map((w) => {
@@ -65,44 +57,56 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
     );
   }
 
-  // Inserta el widget arrastrado en la posición exacta del drop
-  // Recalcula posiciones y loguea el JSON completo (originales + nuevos)
+  // Inserta widget del panel derecho en posición exacta
   function handleDrop(insertAtIndex: number) {
     if (!draggingWidget) return;
 
-    const newWidget: Widget = {
+    const newWidget: DocWidget = {
       posicion: insertAtIndex,
       id_widget: draggingWidget.id_widget,
       titulo: draggingWidget.titulo,
       objetivo_widget: draggingWidget.objetivo_widget,
       descripcion_campos: draggingWidget.descripcion_campos as Record<string, string>,
       campos: { ...draggingWidget.campos } as Record<string, any>,
+      _isNew: true, // <- agrega esto
     };
+    // borra el setNewWidgetIndices que viene después
 
     setDocWidgets((prev) => {
       const next = [...prev];
       next.splice(insertAtIndex, 0, newWidget);
-      // Recalcula posiciones para que sean consecutivas
-      const recalculated = next.map((w, i) => ({ ...w, posicion: i }));
-
-      // Log de la plantilla completa: originales + nuevos con nuevas posiciones
-      console.log("📄 PLANTILLA COMPLETA CON WIDGETS INSERTADOS:");
-      console.log(JSON.stringify(recalculated, null, 2));
-
-      return recalculated;
+      return next.map((w, i) => ({ ...w, posicion: i }));
     });
 
     setDraggingWidget(null);
     setDropIndex(null);
   }
 
-  // Guarda la plantilla con los widgets en el orden actual
-  async function handleSave() {
-    const docId = sessionStorage.getItem("project_id") || "";
-    if (!docId) {
-      alert("No hay proyecto activo");
+  // Reordena widgets del panel izquierdo
+  function handleReorderDrop(targetIndex: number) {
+    if (draggingDocIndex === null || draggingDocIndex === targetIndex) {
+      setDraggingDocIndex(null);
+      setReorderDropIndex(null);
       return;
     }
+
+    setDocWidgets((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(draggingDocIndex, 1);
+      const adjustedTarget = draggingDocIndex < targetIndex ? targetIndex - 1 : targetIndex;
+      next.splice(adjustedTarget, 0, moved);
+      return next.map((w, i) => ({ ...w, posicion: i }));
+    });
+
+
+    setDraggingDocIndex(null);
+    setReorderDropIndex(null);
+  }
+
+  async function handleSave() {
+    const docId = sessionStorage.getItem("project_id") || "";
+    if (!docId) { alert("No hay proyecto activo"); return; }
+    
 
     setSaving(true);
     try {
@@ -119,6 +123,11 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
       );
 
       if (!res.ok) throw new Error("Error al guardar");
+
+      setDocWidgets((prev) => prev.map(w => ({ ...w, _isNew: false })));
+
+
+      // Al guardar exitosamente, quita el resaltado amarillo
       alert("✅ Plantilla guardada correctamente");
     } catch (e) {
       console.error(e);
@@ -130,32 +139,28 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
 
   if (!isOpen) return null;
 
+  // Determina si un widget es el recién añadido (amarillo)
+  // Usamos el índice del último elemento añadido como proxy
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
       <div className="relative w-[1300px] h-[800px] rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden flex flex-col p-8">
 
-        {/* Imágenes decorativas */}
         <img src="/images/RedBob.png" className="absolute -top-16 -right-10 w-52 pointer-events-none select-none z-0" alt="" />
         <img src="/images/GreyBob.png" className="absolute top-1/2 -right-10 -translate-y-1/2 w-36 pointer-events-none select-none z-0" alt="" />
         <img src="/images/banortegf.png" className="absolute bottom-3 left-4 w-60 pointer-events-none select-none z-0" alt="" />
 
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-5 z-10 rounded-md px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-black transition text-lg"
-        >
-          ✕
-        </button>
+        <button onClick={onClose} className="absolute top-4 right-5 z-10 rounded-md px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-black transition text-lg">✕</button>
 
         <div className="relative z-10 flex space-x-6 h-full">
 
-          {/* ── Panel izquierdo: documento ── */}
+          {/* ── Panel izquierdo ── */}
           <div className="flex flex-col flex-1 min-w-0">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-[#EB0029]">Modifica tu plantilla</h2>
-                <p className="text-sm text-gray-400 mt-0.5">Arrastra widgets al documento para añadirlos</p>
+                <p className="text-sm text-gray-400 mt-0.5">Arrastra widgets para añadir o reordenar</p>
               </div>
-              {/* Botón guardar */}
               <button
                 onClick={handleSave}
                 disabled={saving}
@@ -167,8 +172,6 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
 
             <div className="flex-1 rounded-3xl bg-[#ececec] overflow-auto border-2 border-dashed border-blue-200">
               <div className="w-full py-8 px-4">
-
-                {/* Hoja del documento */}
                 <div className="mx-auto w-[816px] border border-gray-300 bg-white shadow-md">
 
                   {/* Header */}
@@ -187,7 +190,6 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
                     className="text-black text-[13px] leading-[1.28]"
                     style={{ paddingTop: "24px", paddingBottom: "24px", paddingLeft: "47px", paddingRight: "51px" }}
                   >
-                    {/* Párrafo introductorio */}
                     <p className="mb-8 text-[13px] leading-[1.2]">
                       Este cuestionario tiene como propósito conocer cuáles son los beneficios,
                       costos y riesgos relacionados con cada iniciativa que ingresa al
@@ -198,7 +200,7 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
                       realización.
                     </p>
 
-                    {/* Drop zone antes del primer widget */}
+                    {/* Drop zone para nuevo widget antes del primero */}
                     <DropZone
                       index={0}
                       isActive={dropIndex === 0}
@@ -208,30 +210,63 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
                       onDrop={() => handleDrop(0)}
                     />
 
-                    {docWidgets.map((widget, i) => (
-                      <div key={`${widget.id_widget}-${widget.posicion}-${i}`}>
-                        {/* Cápsula azul con badge del título */}
-                        <div className="relative rounded-xl border-2 border-blue-300 bg-blue-50/20 mb-2">
-                          <div className="absolute -top-3 left-4 bg-blue-500 text-white text-[10px] font-semibold px-3 py-[2px] rounded-full shadow-sm z-10">
-                            {widget.titulo}
-                          </div>
-                          <div className="pt-5 px-2 pb-2">
-                            {/* handleChange permite editar los campos del widget */}
-                            {renderWidgetNode(widget, handleChange)}
-                          </div>
-                        </div>
+                    {docWidgets.map((widget, i) => {
+                      const isNew = !!(widget as DocWidget)._isNew;
+                      const isReorderTarget = reorderDropIndex === i && draggingDocIndex !== null;
 
-                        {/* Drop zone después de cada widget */}
-                        <DropZone
-                          index={i + 1}
-                          isActive={dropIndex === i + 1}
-                          isDragging={!!draggingWidget}
-                          onDragOver={() => setDropIndex(i + 1)}
-                          onDragLeave={() => setDropIndex(null)}
-                          onDrop={() => handleDrop(i + 1)}
-                        />
-                      </div>
-                    ))}
+                      return (
+                        <div key={`${widget.id_widget}-${i}`}>
+                          {/* Indicador de reordenamiento */}
+                          {isReorderTarget && (
+                            <div className="h-1 bg-blue-500 rounded my-1 transition-all" />
+                          )}
+
+                          {/* Cápsula — amarilla si es nuevo, azul si ya existía */}
+                          <div
+                            draggable
+                            onDragStart={() => setDraggingDocIndex(i)}
+                            onDragEnd={() => { setDraggingDocIndex(null); setReorderDropIndex(null); }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              if (draggingDocIndex !== null) setReorderDropIndex(i);
+                            }}
+                            onDrop={(e) => { e.preventDefault(); handleReorderDrop(i); }}
+                            className={`relative rounded-xl border-2 mb-2 cursor-grab active:cursor-grabbing transition-all
+                              ${isNew
+                                ? "border-yellow-400 bg-yellow-50/40"
+                                : "border-blue-300 bg-blue-50/20"
+                              }
+                              ${draggingDocIndex === i ? "opacity-40 scale-[0.98]" : ""}
+                            `}
+                          >
+                            {/* Badge título */}
+                            <div className={`absolute -top-3 left-4 text-white text-[10px] font-semibold px-3 py-[2px] rounded-full shadow-sm z-10
+  ${isNew ? "bg-yellow-500" : "bg-blue-500"}
+`}>
+                              {widget.titulo}
+                              {isNew && <span className="ml-1 opacity-75">· unsaved</span>}
+                            </div>
+
+                            {/* Icono drag */}
+                            <div className="absolute top-2 right-3 text-gray-300 text-sm select-none">⠿</div>
+
+                            <div className="pt-5 px-2 pb-2">
+                              {renderWidgetNode(widget, handleChange)}
+                            </div>
+                          </div>
+
+                          {/* Drop zone para nuevo widget (desde panel derecho) */}
+                          <DropZone
+                            index={i + 1}
+                            isActive={dropIndex === i + 1}
+                            isDragging={!!draggingWidget}
+                            onDragOver={() => setDropIndex(i + 1)}
+                            onDragLeave={() => setDropIndex(null)}
+                            onDrop={() => handleDrop(i + 1)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Footer */}
@@ -240,17 +275,21 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
                   </div>
                 </div>
 
-                {/* Indicador de qué widget se está arrastrando */}
                 {draggingWidget && (
                   <div className="mt-4 text-center text-sm text-blue-500 animate-pulse font-medium">
                     ⠿ Arrastrando: "{draggingWidget.titulo}" — suéltalo entre los widgets
+                  </div>
+                )}
+                {draggingDocIndex !== null && (
+                  <div className="mt-4 text-center text-sm text-purple-500 animate-pulse font-medium">
+                    ⠿ Reordenando: "{docWidgets[draggingDocIndex]?.titulo}" — suéltalo donde quieras
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* ── Panel derecho: lista de widgets arrastrables ── */}
+          {/* ── Panel derecho ── */}
           <div className="flex flex-col w-[320px] shrink-0">
             <div className="mb-3 flex items-center gap-2">
               <LayoutGrid size={20} className="text-[#EB0029]" />
@@ -262,7 +301,7 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
                 <div
                   key={widget.id_widget}
                   draggable
-                  onDragStart={() => setDraggingWidget(widget)}
+                  onDragStart={() => { setDraggingWidget(widget); setDraggingDocIndex(null); }}
                   onDragEnd={() => { setDraggingWidget(null); setDropIndex(null); }}
                   className={`w-full rounded-xl bg-white border shadow-sm cursor-grab active:cursor-grabbing select-none transition overflow-hidden
                     ${draggingWidget?.id_widget === widget.id_widget
@@ -286,23 +325,9 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
   );
 }
 
-/* ─────────────────────────────────────────
-   DropZone — zona de soltar entre widgets
-───────────────────────────────────────── */
-function DropZone({
-  index,
-  isActive,
-  isDragging,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-}: {
-  index: number;
-  isActive: boolean;
-  isDragging: boolean;
-  onDragOver: () => void;
-  onDragLeave: () => void;
-  onDrop: () => void;
+function DropZone({ index, isActive, isDragging, onDragOver, onDragLeave, onDrop }: {
+  index: number; isActive: boolean; isDragging: boolean;
+  onDragOver: () => void; onDragLeave: () => void; onDrop: () => void;
 }) {
   return (
     <div
@@ -317,16 +342,11 @@ function DropZone({
           : "h-0 overflow-hidden border-0"
         }`}
     >
-      {isActive && (
-        <span className="text-xs font-semibold text-blue-500">＋ Suelta aquí</span>
-      )}
+      {isActive && <span className="text-xs font-semibold text-blue-500">＋ Suelta aquí</span>}
     </div>
   );
 }
 
-/* ─────────────────────────────────────────
-   ScaledWidgetPreview — previsualización escalada del panel derecho
-───────────────────────────────────────── */
 const SCALE = 0.34;
 const DOC_WIDTH = 816;
 const noop = () => {};
@@ -342,11 +362,8 @@ function ScaledWidgetPreview({ widget }: { widget: Widget }) {
   return (
     <div style={{ width: "100%", height: `${innerHeight * SCALE}px`, overflow: "hidden", position: "relative" }}>
       <div style={{ width: `${DOC_WIDTH}px`, transform: `scale(${SCALE})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
-        <div
-          ref={innerRef}
-          className="text-black text-[13px] leading-[1.28] bg-white"
-          style={{ paddingTop: "16px", paddingBottom: "16px", paddingLeft: "47px", paddingRight: "51px" }}
-        >
+        <div ref={innerRef} className="text-black text-[13px] leading-[1.28] bg-white"
+          style={{ paddingTop: "16px", paddingBottom: "16px", paddingLeft: "47px", paddingRight: "51px" }}>
           {renderWidgetNode(widget, noop)}
         </div>
       </div>
