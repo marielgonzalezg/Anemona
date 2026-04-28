@@ -53,7 +53,7 @@ export default function RecentProjectList() {
         setLoading(true);
 
         const res = await fetch(
-          `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos_recientes`
+          `https://api-anemona-637376850775.northamerica-northeast1.run.app/usuarios/${idusuario}/proyectos_recientes`
         );
 
         if (!res.ok) {

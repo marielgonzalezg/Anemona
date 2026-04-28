@@ -81,10 +81,6 @@ export default function NewProject({ onEnterDashboard }: NewProjectProps) {
           </h2>
         </div>
 
-        <WidgetsModal
-          isOpen={showWidgets}
-          onClose={() => setShowWidgets(false)}
-        />
       </section>
 
       <FormModal

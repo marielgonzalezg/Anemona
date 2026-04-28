@@ -55,7 +55,7 @@ export default function ProjectList() {
         setLoading(true);
 
         const res = await fetch(
-          `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos`
+          `https://api-anemona-637376850775.northamerica-northeast1.run.app/usuarios/${idusuario}/proyectos`
         );
 
         if (!res.ok) {
