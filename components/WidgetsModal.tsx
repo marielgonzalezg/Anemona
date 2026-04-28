@@ -1,155 +1,103 @@
 "use client";
 
 // ─── Relaciones con otros archivos ───────────────────────────────────────────
-// - Importa de ERSPreview.tsx: buildBlocks, Page, USABLE_HEIGHT, BlockDef
-// - Importa de WidgetRenderer.tsx: renderizado visual de cada widget
+// - Importa de DynamicVisor.tsx: USABLE_HEIGHT, BlockDef (antes venían de ERSPreview)
+// - Importa de BibliotecaWidgets.tsx: renderWXXX y tipo Widget
 // - Lee widgetlist.json para saber qué widgets hay disponibles
-// - Lee sessionStorage["project_id"] para saber qué doc cargar de Firestore
+// - Recibe widgets[] como prop desde Documentacion.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  buildBlocks,
-  Page,
-  USABLE_HEIGHT,
-  type BlockDef,
-} from "@/components/ERSPreview";
-import WidgetRenderer from "@/components/WidgetRenderer";
+import { useEffect, useRef, useState } from "react";
+import WidgetRenderer from "./DynamicVisor";
 import { LayoutGrid } from "lucide-react";
 import widgetList from "./widgetlist.json";
-
-type Widget = (typeof widgetList)[number];
+import { BlockDef, USABLE_HEIGHT } from "./DynamicVisor";
+import {
+  renderW000,
+  renderW001,
+  renderW002,
+  renderW003,
+  Widget,
+} from "./widgets/BibliotecaWidgets";
 
 type WidgetsModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  widgets: Widget[];
 };
 
-/* ─────────────────────────────────────────
-   WidgetsModal
-───────────────────────────────────────── */
-export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
-  const [srsData, setSrsData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
-  // mergedBlocks: lista ordenada de todos los bloques (doc original + widgets insertados)
-  // Es la fuente de verdad del orden del documento
+export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalProps) {
   const [mergedBlocks, setMergedBlocks] = useState<BlockDef[]>([]);
-
-  // pages: resultado del algoritmo de paginación sobre mergedBlocks
   const [pages, setPages] = useState<BlockDef[][]>([]);
   const [measured, setMeasured] = useState(false);
-
-  // measureRefs: refs para medir la altura real de cada bloque en el DOM
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const [draggingWidget, setDraggingWidget] = useState<Widget | null>(null);
+  const [draggingWidget, setDraggingWidget] = useState<(typeof widgetList)[number] | null>(null);
   const [activeDropZone, setActiveDropZone] = useState<number | null>(null);
 
-  /* ── Cargar documento desde Firestore ── */
+  /* ── Inicializar mergedBlocks desde widgets prop ──
+     Usa renderWXXX directamente en lugar de WidgetRenderer completo
+     para que los bloques sean simples nodos sin paginación propia */
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || widgets.length === 0) return;
 
-    const docId =
-      typeof window !== "undefined"
-        ? sessionStorage.getItem("project_id") || ""
-        : "";
-
-    if (!docId) {
-      console.error("No se encontró project_id en sessionStorage");
-      return;
-    }
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `http://127.0.0.1:8000/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
-          { method: "GET", headers: { accept: "application/json" }, cache: "no-store" }
-        );
-        if (!res.ok) throw new Error("Error en la respuesta del servidor");
-        const json = await res.json();
-        if (json.ok && json.data) setSrsData(json.data);
-      } catch (e) {
-        console.error("Error cargando SRS:", e);
-      } finally {
-        setLoading(false);
+    const noop = () => {};
+    const blocks: BlockDef[] = widgets.map((w) => {
+      let node: React.ReactNode = null;
+      switch (w.id_widget) {
+        case "w_000": node = renderW000(w, noop); break;
+        case "w_001": node = renderW001(w, noop); break;
+        case "w_002": node = renderW002(w, noop); break;
+        case "w_003": node = renderW003(w, noop); break;
       }
-    };
+      return { id: `${w.id_widget}-${w.posicion}`, node };
+    });
 
-    load();
-  }, [isOpen]);
-
-  /* ── Inicializar mergedBlocks cuando llega srsData ──
-     useMemo evita recrear el array en cada render (evita loop infinito) */
-  const initialBlocks = useMemo(
-    () => (srsData ? buildBlocks(srsData, () => "") : []),
-    [srsData]
-  );
-
-  useEffect(() => {
-    if (initialBlocks.length === 0) return;
-    setMergedBlocks(initialBlocks);
-  }, [initialBlocks]);
+    setMergedBlocks(blocks);
+  }, [isOpen, widgets]);
 
   /* ── Resetear paginación cuando mergedBlocks cambia (nuevo widget insertado) ── */
   useEffect(() => {
     if (mergedBlocks.length === 0) return;
     setMeasured(false);
     setPages([]);
-    // Limpiar refs para que el nuevo render invisible pueda medir bien
     measureRefs.current = [];
   }, [mergedBlocks]);
 
-  /* ── Algoritmo de paginación greedy ──
-     Corre después de que el render invisible puso los bloques en el DOM */
+  /* ── Algoritmo de paginación greedy ── */
   useEffect(() => {
     if (measured || mergedBlocks.length === 0) return;
 
     const raf = requestAnimationFrame(() => {
-      const heights = measureRefs.current.map((el) => el?.offsetHeight ?? 0);
+      requestAnimationFrame(() => {
+        const heights = measureRefs.current.map((el) => el?.offsetHeight ?? 0);
 
-      const result: BlockDef[][] = [];
-      let currentPage: BlockDef[] = [];
-      let currentHeight = 0;
+        const result: BlockDef[][] = [];
+        let currentPage: BlockDef[] = [];
+        let currentHeight = 0;
 
-      mergedBlocks.forEach((block, i) => {
-        const h = heights[i];
-        // Si agregar este bloque supera la altura útil, abrir nueva página
-        if (currentHeight + h > USABLE_HEIGHT && currentPage.length > 0) {
-          result.push(currentPage);
-          currentPage = [block];
-          currentHeight = h;
-        } else {
-          currentPage.push(block);
-          currentHeight += h;
-        }
+        mergedBlocks.forEach((block, i) => {
+          const h = heights[i];
+          if (currentHeight + h > USABLE_HEIGHT && currentPage.length > 0) {
+            result.push(currentPage);
+            currentPage = [block];
+            currentHeight = h;
+          } else {
+            currentPage.push(block);
+            currentHeight += h;
+          }
+        });
+
+        if (currentPage.length > 0) result.push(currentPage);
+        setPages(result);
+        setMeasured(true);
       });
-
-      if (currentPage.length > 0) result.push(currentPage);
-
-      setPages(result);
-      setMeasured(true);
     });
 
     return () => cancelAnimationFrame(raf);
   }, [measured, mergedBlocks]);
 
-  /* ── Log del JSON resultante cada vez que se re-pagina ── */
-  useEffect(() => {
-    if (!measured || !srsData) return;
-
-    const ordenBloques = mergedBlocks.map((b) => ({
-      id: b.id,
-      tipo: b.id.startsWith("widget_drop_") ? "widget_insertado" : "bloque_original",
-    }));
-
-    console.log("📄 DOCUMENTO CON WIDGETS INSERTADOS:");
-    console.log(JSON.stringify({ plantilla_original: srsData, orden_bloques: ordenBloques }, null, 2));
-  }, [measured, mergedBlocks, srsData]);
-
   /* ── Drag & Drop handlers ── */
-  function handleDragStart(widget: Widget) {
+  function handleDragStart(widget: (typeof widgetList)[number]) {
     setDraggingWidget(widget);
   }
 
@@ -162,22 +110,28 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
   function handleDrop(insertAtIndex: number) {
     if (!draggingWidget) return;
 
+    const noop = () => {};
+    let node: React.ReactNode = null;
+    const w = draggingWidget as unknown as Widget;
+    switch (w.id_widget) {
+      case "w_000": node = renderW000(w, noop); break;
+      case "w_001": node = renderW001(w, noop); break;
+      case "w_002": node = renderW002(w, noop); break;
+      case "w_003": node = renderW003(w, noop); break;
+    }
+
     const widgetBlock: BlockDef = {
-      // ID único para no colisionar si se arrastra el mismo widget varias veces
       id: `widget_drop_${draggingWidget.id_widget}_${Date.now()}`,
       node: (
-        // Badge visual que indica que este bloque fue añadido por el usuario
         <div className="relative border border-blue-200 rounded-lg px-4 py-3 mb-2 bg-blue-50/30">
           <span className="absolute top-1 right-2 text-[10px] bg-blue-100 text-blue-500 rounded px-2 py-[1px] font-medium">
             Widget añadido
           </span>
-          {/* WidgetRenderer renderiza el contenido con el mismo estilo que ERSPreview */}
-          <WidgetRenderer widget={draggingWidget as any} />
+          {node}
         </div>
       ),
     };
 
-    // Insertar en el índice exacto donde se soltó
     setMergedBlocks((prev) => {
       const next = [...prev];
       next.splice(insertAtIndex, 0, widgetBlock);
@@ -211,66 +165,81 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
             </div>
 
             <div className="flex-1 rounded-3xl bg-[#f9f9f9] overflow-auto border border-dashed border-blue-300">
-              {loading && (
-                <div className="flex h-full items-center justify-center text-sm text-gray-500">Cargando documento...</div>
-              )}
+              <div className="w-full bg-[#ececec] py-8 px-4">
 
-              {!loading && !srsData && (
-                <div className="flex h-full items-center justify-center text-sm text-gray-400">No se encontró el documento</div>
-              )}
+                {/* ── Fase 1: Spinner + render invisible para medir ── */}
+                {!measured && (
+                  <>
+                    <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+                      <svg className="mr-2 h-5 w-5 animate-spin text-[#EB0029]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Calculando paginación...
+                    </div>
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: "-9999px",
+                        visibility: "hidden",
+                        pointerEvents: "none",
+                        width: "716px",
+                        zIndex: -1,
+                      }}
+                    >
+                      {mergedBlocks.map((block, i) => (
+                        <div key={block.id} ref={(el) => { measureRefs.current[i] = el; }}>
+                          {block.node}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
 
-              {!loading && srsData && (
-                <div className="w-full bg-[#ececec] py-8 px-4">
+                {/* ── Fase 2: Render paginado con drop zones ── */}
+                {measured && pages.map((pageBlocks, pageIndex) => {
+                  const pageStartIndex = pages
+                    .slice(0, pageIndex)
+                    .reduce((acc, pg) => acc + pg.length, 0);
 
-                  {/* ── Fase 1: Spinner + render invisible para medir ──
-                      Los bloques se renderizan fuera de pantalla (left: -9999px)
-                      para que el navegador calcule sus alturas reales antes de paginar */}
-                  {!measured && (
-                    <>
-                      <div className="flex items-center justify-center py-16 text-sm text-gray-400">
-                        <svg className="mr-2 h-5 w-5 animate-spin text-[#EB0029]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                        </svg>
-                        Calculando paginación...
-                      </div>
-                      <div
-                        aria-hidden="true"
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          left: "-9999px",
-                          visibility: "hidden",
-                          pointerEvents: "none",
-                          width: "716px", // ancho del doc (816px) - padding izq (47) - padding der (51) = 718px aprox
-                          zIndex: -1,
-                        }}
-                      >
-                        {mergedBlocks.map((block, i) => (
-                          <div key={block.id} ref={(el) => { measureRefs.current[i] = el; }}>
-                            {block.node}
+                  return (
+                    <div
+                      key={pageIndex}
+                      className="mx-auto mb-8 w-[816px] border border-gray-300 bg-white shadow-md"
+                      style={{ overflow: "hidden" }}
+                    >
+                      {/* Header */}
+                      <div className="h-[110px] border-b border-[#b9a89f]">
+                        <div className="flex items-center justify-between px-12 py-7">
+                          <div className="text-[22px] font-semibold leading-none text-[#7c7c7c]">
+                            <span>Formato Estándar | </span>
+                            <span className="font-normal">Levantamiento de Requerimiento</span>
                           </div>
-                        ))}
+                          <img src="/images/rayaNegra.png" alt="" className="h-[45px] object-cover" />
+                        </div>
                       </div>
-                    </>
-                  )}
 
-                  {/* ── Fase 2: Render paginado con drop zones entre cada bloque ── */}
-                  {measured && pages.map((pageBlocks, pageIndex) => {
-                    // Índice global del primer bloque de esta página
-                    // Necesario para calcular en qué posición del array mergedBlocks insertar
-                    const pageStartIndex = pages
-                      .slice(0, pageIndex)
-                      .reduce((acc, pg) => acc + pg.length, 0);
+                      {/* Contenido */}
+                      <div style={{ padding: "24px 51px 24px 47px" }}>
+                        {/* Párrafo introductorio solo en página 1 */}
+                        {pageIndex === 0 && (
+                          <p className="mb-8 text-[13px] leading-[1.2]">
+                            Este cuestionario tiene como propósito conocer cuáles son los beneficios,
+                            costos y riesgos relacionados con cada iniciativa que ingresa al
+                            portafolio de proyectos y mantenimientos tecnológicos de Áreas de
+                            Soporte. Esta información será de utilidad para ponderar el portafolio
+                            en su conjunto y priorizar la atención de los requerimientos de acuerdo
+                            a su beneficio económico, alineación estratégica y conveniencia de su
+                            realización.
+                          </p>
+                        )}
 
-                    return (
-                      <Page key={pageIndex}>
                         {pageBlocks.map((block, blockIndexInPage) => {
                           const globalIndex = pageStartIndex + blockIndexInPage;
                           return (
                             <div key={block.id}>
-                              {/* Drop zone ANTES de cada bloque —
-                                  solo visible cuando hay un widget siendo arrastrado */}
                               <DropZone
                                 index={globalIndex}
                                 isActive={activeDropZone === globalIndex}
@@ -298,11 +267,16 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
                             />
                           );
                         })()}
-                      </Page>
-                    );
-                  })}
-                </div>
-              )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex h-[90px] items-center px-6">
+                        <img src="/images/banortegf.png" alt="" className="h-[65px] object-contain" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -318,7 +292,7 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
                 <div
                   key={widget.id_widget}
                   draggable
-                  onDragStart={() => handleDragStart(widget as Widget)}
+                  onDragStart={() => handleDragStart(widget)}
                   onDragEnd={handleDragEnd}
                   className={`w-full rounded-xl bg-white border shadow-sm cursor-grab active:cursor-grabbing select-none transition overflow-hidden
                     ${draggingWidget?.id_widget === widget.id_widget
@@ -326,14 +300,11 @@ export default function WidgetsModal({ isOpen, onClose }: WidgetsModalProps) {
                       : "border-gray-200 hover:shadow-md hover:border-blue-200"
                     }`}
                 >
-                  {/* Header del widget con ícono de arrastre */}
                   <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 bg-gray-50">
                     <span className="text-gray-300 text-base select-none">⠿</span>
                     <span className="text-sm font-semibold text-gray-700">{widget.titulo}</span>
                   </div>
-
-                  {/* Previsualización escalada — WidgetRenderer con estilo ERSPreview */}
-                  <ScaledWidgetPreview widget={widget as Widget} />
+                  <ScaledWidgetPreview widget={widget as unknown as Widget} />
                 </div>
               ))}
             </div>
@@ -386,9 +357,7 @@ function DropZone({
 
 /* ─────────────────────────────────────────
    ScaledWidgetPreview — previsualización escalada del widget
-   Renderiza WidgetRenderer a 816px de ancho y lo escala a 0.34
-   para que quepa en el panel derecho de 320px
-   Relación: usa WidgetRenderer.tsx para el contenido visual
+   Renderiza el widget a 816px y lo escala a 0.34
 ───────────────────────────────────────── */
 const SCALE = 0.34;
 const DOC_WIDTH = 816;
@@ -397,22 +366,28 @@ function ScaledWidgetPreview({ widget }: { widget: Widget }) {
   const innerRef = useRef<HTMLDivElement>(null);
   const [innerHeight, setInnerHeight] = useState(180);
 
-  // Medir la altura real del contenido tras el primer render
   useEffect(() => {
     if (innerRef.current) setInnerHeight(innerRef.current.scrollHeight);
   }, []);
 
+  const noop = () => {};
+  let node: React.ReactNode = null;
+  switch (widget.id_widget) {
+    case "w_000": node = renderW000(widget, noop); break;
+    case "w_001": node = renderW001(widget, noop); break;
+    case "w_002": node = renderW002(widget, noop); break;
+    case "w_003": node = renderW003(widget, noop); break;
+  }
+
   return (
-    // El contenedor externo tiene la altura correcta tras el escalado
     <div style={{ width: "100%", height: `${innerHeight * SCALE}px`, overflow: "hidden", position: "relative" }}>
-      {/* Capa interna a 816px que se escala hacia la esquina superior izquierda */}
       <div style={{ width: `${DOC_WIDTH}px`, transform: `scale(${SCALE})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
         <div
           ref={innerRef}
           className="text-black text-[13px] leading-[1.28] bg-white"
           style={{ paddingTop: "16px", paddingBottom: "16px", paddingLeft: "47px", paddingRight: "51px" }}
         >
-          <WidgetRenderer widget={widget} />
+          {node}
         </div>
       </div>
     </div>

@@ -416,7 +416,8 @@ export default function ChatBot() {
 
           {/* Widgets modal */}
           
-          {isWidgetsOpen && <WidgetsModal isOpen={isWidgetsOpen} onClose={() => setIsWidgetsOpen(false)} />}
+          {isWidgetsOpen && <WidgetsModal isOpen={isWidgetsOpen} onClose={() => setIsWidgetsOpen(false)} widgets={[]} />}
+
 
       </div>
       <FormModal

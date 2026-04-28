@@ -1,5 +1,13 @@
 "use client";
 
+// ─── Relaciones con otros archivos ───────────────────────────────────────────
+// - Usa DynamicVisor.tsx (WidgetRenderer) para mostrar el documento
+// - Usa WidgetsModal.tsx para el modal de widgets arrastrables
+// - Lee sessionStorage["project_id"] para saber qué doc cargar de Firestore
+// - Detecta cambios del chat y los pasa como changedFields a WidgetRenderer
+// CAMBIO: ya no usa ERSPreview ni ERSData, ahora todo es Widget[]
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useEffect, useState } from "react";
 import {
   ChevronLeft,
@@ -8,10 +16,10 @@ import {
   CheckCircle,
   X,
 } from "lucide-react";
-import ERSPreview from "@/components/ERSPreview";
-import type { ERSData, ERSWidgetsResponse, WidgetFromApi } from "@/types/  ers";
 import WidgetRenderer from "./DynamicVisor";
+import WidgetsModal from "./WidgetsModal";
 import { Widget } from "./widgets/BibliotecaWidgets";
+import type { WidgetFromApi, ERSWidgetsResponse } from "@/types/  ers";
 
 const DRAWIO_EMBED_URL =
   "https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagramaarq.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1K0pWBSO4_RdxmUlAippvNTiQZfnkcoSJ%26export%3Ddownload";
@@ -74,38 +82,34 @@ export default function Documentacion({
 }) {
   const [tab, setTab] = useState<"ERS" | "Análisis" | "Arquitectura">("ERS");
   const [showPopup, setShowPopup] = useState(false);
-  const [ersData, setErsData] = useState<ERSData | null>(null);
   const [loadingERS, setLoadingERS] = useState(true);
   const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
   const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
 
   const getActiveProjectId = () => {
     if (typeof window === "undefined") return "";
     return sessionStorage.getItem("project_id") || "";
   };
 
-  const mapErsDataToWidgets = (data: ERSWidgetsResponse["data"]): Widget[] => {
-    const { posiciones, ...widgetMap } = data;
-
-    if (!posiciones || !Array.isArray(posiciones)) return [];
-
-    return posiciones.map((widgetId: string, index: number) => {
-      const widgetData = widgetMap[widgetId] as WidgetFromApi;
-      return {
-        posicion: index + 1,
-        id_widget: widgetId,
-        titulo: widgetData.titulo ?? widgetId,
-        objetivo_widget: widgetData.objetivo_widget ?? "",
-        descripcion_campos: widgetData.descripcion_campos ?? {},
-        campos: widgetData.campos ?? {},
-      };
-    });
+  // Convierte la respuesta de Firestore (array de widgets) en Widget[]
+  const mapDataToWidgets = (data: any[]): Widget[] => {
+    if (!Array.isArray(data)) return [];
+    return data.map((item, index) => ({
+      posicion: item.posicion ?? index,
+      id_widget: item.id_widget ?? `w_${index}`,
+      titulo: item.titulo ?? "",
+      objetivo_widget: item.objetivo_widget ?? "",
+      descripcion_campos: item.descripcion_campos ?? {},
+      campos: item.campos ?? {},
+    }));
   };
 
   useEffect(() => {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
+    // Compara dos snapshots del documento y devuelve los paths que cambiaron
     const detectChanges = (oldData: any, newData: any) => {
       const changed = new Set<string>();
 
@@ -136,45 +140,65 @@ export default function Documentacion({
     };
 
     const fetchERS = async () => {
-  try {
-    // TEMPORAL - hardcodeo para probar
-    const response = await fetch(
-      `http://127.0.0.1:8000/firestore/bajar?doc_id=5PmuVc79xxDuwTN4D0my`,
-      {
-        method: "GET",
-        headers: { accept: "application/json" },
-        cache: "no-store",
-      }
-    );
+      try {
+        const docId = getActiveProjectId();
+        if (!docId) return;
 
-    if (!response.ok) throw new Error("No se pudo obtener el ERS");
+        const response = await fetch(
+          `http://127.0.0.1:8000/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
+          {
+            method: "GET",
+            headers: { accept: "application/json" },
+            cache: "no-store",
+          }
+        );
 
-    const json = await response.json();
-    console.log("json.data →", json.data);        // ← ¿aparece en consola?
-    console.log("posiciones →", json.data?.posiciones); // ← ¿tiene array?
+        if (!response.ok) throw new Error("No se pudo obtener el ERS");
 
-    if (isMounted && json.ok && json.data) {
-          setErsData((prev) => {
-            if (!prev) return json.data;
+        const json = await response.json();
+        console.log("json completo:", JSON.stringify(json, null, 2));  
+        console.log("json.data →", json.data);
+        console.log("posiciones →", json.data?.posiciones);
 
-            const changes = detectChanges(prev, json.data);
+        if (isMounted && json.ok && json.data) {
+          // Detectar cambios respecto al estado anterior de widgets
+          setWidgets((prev) => {
+            const changes = prev.length > 0
+              ? detectChanges(prev, json.data)
+              : new Set<string>();
 
             if (changes.size > 0) {
+              console.log("🟡 changedFields:", [...changes]);
               setChangedFields(changes);
               if (timeoutId) clearTimeout(timeoutId);
               timeoutId = setTimeout(() => {
                 if (isMounted) setChangedFields(new Set());
               }, 5000);
-              return json.data;
+            }
+
+            // Firestore devuelve array de widgets directamente
+            if (Array.isArray(json.data)) {
+              return mapDataToWidgets(json.data);
+            }
+
+            // O puede venir con posiciones (formato antiguo)
+            if (json.data.posiciones) {
+              const { posiciones, ...widgetMap } = json.data;
+              return posiciones.map((widgetId: string, index: number) => {
+                const widgetData = widgetMap[widgetId] as WidgetFromApi;
+                return {
+                  posicion: index,
+                  id_widget: widgetId,
+                  titulo: widgetData.titulo ?? widgetId,
+                  objetivo_widget: widgetData.objetivo_widget ?? "",
+                  descripcion_campos: widgetData.descripcion_campos ?? {},
+                  campos: widgetData.campos ?? {},
+                };
+              });
             }
 
             return prev;
           });
-
-          if (json.data.posiciones) {
-            const mapped = mapErsDataToWidgets(json.data);
-            setWidgets(mapped);
-          }
         }
       } catch (error) {
         console.error("Error cargando ERS:", error);
@@ -228,6 +252,7 @@ export default function Documentacion({
       setShowPopup(true);
     }
   };
+
   return (
     <>
       {showPopup && (
@@ -278,10 +303,7 @@ export default function Documentacion({
                               Cargando ERS...
                             </div>
                           ) : (
-                            <>
-                             {/* <ERSPreview data={ersData} changedFields={changedFields} /> */}
-                              <WidgetRenderer widgets={widgets} />
-                            </>
+                            <WidgetRenderer widgets={widgets} changedFields={changedFields} />
                           )}
                         </div>
                       ) : (
@@ -355,10 +377,7 @@ export default function Documentacion({
                         Cargando documento...
                       </div>
                     ) : (
-                      <>
-                       {/* <ERSPreview data={ersData} changedFields={changedFields} /> */}
-                        <WidgetRenderer widgets={widgets} />
-                      </>
+                      <WidgetRenderer widgets={widgets} changedFields={changedFields} />
                     )}
                   </div>
                 ) : (
@@ -375,6 +394,13 @@ export default function Documentacion({
           )}
         </div>
       </section>
+
+      {/* WidgetsModal recibe widgets para mostrar el doc actualizado */}
+      <WidgetsModal
+        isOpen={isWidgetsOpen}
+        onClose={() => setIsWidgetsOpen(false)}
+        widgets={widgets}
+      />
     </>
   );
 }

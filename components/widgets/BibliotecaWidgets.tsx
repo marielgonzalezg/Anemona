@@ -133,7 +133,8 @@ function BodyText({
 /* ================== W000 ================== */
 export const renderW000 = (
   widget: Widget,
-  onChange: (posicion: number, key: string, value: string) => void
+  onChange: (posicion: number, key: string, value: string) => void,
+  highlight: (path: string) => string = () => ""  // <- highlight
 ) => {
   const campos = widget.campos || {};
 
@@ -187,10 +188,26 @@ const Cell = (key: string) => (
 };
 
 /* ================== W001 ================== */
+//{
+//  "posicion": 1,
+//  "id_widget": "w_001",
+//  "titulo": "Descripción general de la iniciativa",
+//  "objetivo_widget": "Este widget documenta la visión general del proyecto en el SRS. INSTRUCCIONES PARA EL AGENTE: (1) OBLIGATORIO — revisa el valor actual de 'descripcion' dentro de 'campos'. Si está vacío, null o no existe, DEBES generarla obligatoriamente con base en la información del proyecto: incluye el problema que se desea resolver, el contexto actual del área o proceso afectado, y la justificación de por qué este proyecto es necesario. Si 'descripcion' ya tiene contenido, NO la modifiques a menos que el usuario lo solicite explícitamente. (2) OPCIONAL — solo modifica 'titulo' o 'subtitulo' dentro de 'campos' si el usuario lo solicita explícitamente. Si no los menciona, no los incluyas en 'campos' y se usarán los valores por defecto: título='Descripción general de la iniciativa y justificación', subtítulo='Descripción general de la iniciativa'.",
+//  "descripcion_campos": {
+//    "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+//    "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+//    "subtitulo": "OPCIONAL. Sobrescribe el subtítulo de la sección. Valor por defecto: 'Descripción general de la iniciativa'."
+//  },
+//  "campos": {
+//    "descripcion": ""
+//  }
+//}
+
 
 export const renderW001 = (
   widget: Widget,
-  onChange: (posicion: number, key: string, value: string) => void
+  onChange: (posicion: number, key: string, value: string) => void,
+  highlight: (path: string) => string = () => ""  // <- highlight
 ) => {
   const campos = widget.campos || {};
 
@@ -261,9 +278,31 @@ export const renderW001 = (
 
 /* ================== W002 ================== */
 
+//  {
+//    posicion: 1,
+//    id_widget: "w_002",
+//    titulo: "Descripción general de la iniciativa",
+//
+//    objetivo_widget:
+//      "Este widget corresponde a la sección de visión general del SRS. Su objetivo es documentar de forma clara y estructurada la iniciativa o proyecto, proporcionando el contexto necesario para entender el problema que se busca resolver y justificar su desarrollo dentro del sistema.",
+//
+//    descripcion_campos: {
+//
+//        },
+//
+//    campos: {
+//    "Titulo": "Objetivos de la iniciativa",
+//    "Seccion_1": "Contenido de la sección 1. Aquí se puede incluir información detallada sobre el primer objetivo específico de la iniciativa, describiendo las metas concretas que se buscan alcanzar y cómo contribuyen al objetivo general del proyecto.",
+//    "Seccion_1Titulo": "Seccion_1",
+//    "Seccion_2": "Contenido de la sección 2. En esta parte se puede detallar el segundo objetivo específico, explicando su importancia dentro del contexto del proyecto y cómo se relaciona con los demás objetivos para lograr el éxito de la iniciativa.",
+//    "Seccion_2Titulo": "Seccion_2",
+//    },
+//  }
+
 export const renderW002 = (
   widget: Widget,
-  onChange: (posicion: number, key: string, value: string) => void
+  onChange: (posicion: number, key: string, value: string) => void,
+  highlight: (path: string) => string = () => ""  // <- highlight
 ) => {
   const campos = widget.campos || {};
 
@@ -329,7 +368,8 @@ export const renderW002 = (
 
 export const renderW003 = (
   widget: Widget,
-  onChange: (posicion: number, key: string, value: any) => void
+  onChange: (posicion: number, key: string, value: any) => void,
+  highlight: (path: string) => string = () => ""  // <- highlight
 ) => {
   const filas = widget.campos?.filas || [];
 

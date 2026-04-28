@@ -287,7 +287,12 @@ export default function FormModal({
       AREAS_IMPACTADAS: "Áreas impactadas",
     },
     campos: {
-      AREAS_IMPACTADAS: areasImpactadasConNombre,
+      filas: [
+        {
+          TIPO:"Área de negocio",
+          PROBABLE_PERDIDA: "Proceso o actividad impactada",
+        }
+      ],
     },
   },
    {
