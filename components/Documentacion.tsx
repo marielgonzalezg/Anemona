@@ -5,10 +5,9 @@
 // - Usa WidgetsModal.tsx para el modal de widgets arrastrables
 // - Lee sessionStorage["project_id"] para saber qué doc cargar de Firestore
 // - Detecta cambios del chat y los pasa como changedFields a WidgetRenderer
-// CAMBIO: ya no usa ERSPreview ni ERSData, ahora todo es Widget[]
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -19,7 +18,6 @@ import {
 import WidgetRenderer from "./DynamicVisor";
 import WidgetsModal from "./WidgetsModal";
 import { Widget } from "./widgets/BibliotecaWidgets";
-import type { WidgetFromApi, ERSWidgetsResponse } from "@/types/  ers";
 
 const DRAWIO_EMBED_URL =
   "https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagramaarq.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1K0pWBSO4_RdxmUlAippvNTiQZfnkcoSJ%26export%3Ddownload";
@@ -30,42 +28,24 @@ const DOC_NAMES: Record<"ERS" | "Análisis" | "Arquitectura", string> = {
   Arquitectura: "Diseño de Arquitectura",
 };
 
-function DownloadPopup({
-  docName,
-  onClose,
-}: {
-  docName: string;
-  onClose: () => void;
-}) {
+function DownloadPopup({ docName, onClose }: { docName: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative mx-4 flex min-w-[300px] max-w-sm animate-in zoom-in fade-in flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-2xl duration-200">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 transition hover:text-gray-600"
-        >
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 transition hover:text-gray-600">
           <X size={18} />
         </button>
         <div className="rounded-full bg-green-100 p-4">
           <CheckCircle className="text-green-500" size={36} />
         </div>
         <div className="text-center">
-          <h2 className="mb-1 text-lg font-bold text-gray-800">
-            ¡Descarga exitosa!
-          </h2>
+          <h2 className="mb-1 text-lg font-bold text-gray-800">¡Descarga exitosa!</h2>
           <p className="text-sm text-gray-500">
-            <span className="font-semibold text-gray-700">{docName}</span> se ha
-            descargado correctamente.
+            <span className="font-semibold text-gray-700">{docName}</span> se ha descargado correctamente.
           </p>
         </div>
-        <button
-          onClick={onClose}
-          className="mt-2 rounded-full bg-[#EB0029] px-8 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#c8001f]"
-        >
+        <button onClick={onClose} className="mt-2 rounded-full bg-[#EB0029] px-8 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#c8001f]">
           Aceptar
         </button>
       </div>
@@ -73,13 +53,7 @@ function DownloadPopup({
   );
 }
 
-export default function Documentacion({
-  expanded,
-  onToggle,
-}: {
-  expanded: boolean;
-  onToggle: () => void;
-}) {
+export default function Documentacion({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   const [tab, setTab] = useState<"ERS" | "Análisis" | "Arquitectura">("ERS");
   const [showPopup, setShowPopup] = useState(false);
   const [loadingERS, setLoadingERS] = useState(true);
@@ -87,29 +61,46 @@ export default function Documentacion({
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
 
+  // Ref para guardar el último snapshot raw de Firestore.
+  // Usamos ref (no state) porque fetchERS vive en un closure del useEffect
+  // y no puede ver los valores actualizados de state — pero sí puede ver refs.
+  const prevRawDataRef = useRef<any>(null);
+
+  // Lee el project_id del sessionStorage.
+  // Se actualiza cuando el usuario hace click en un proyecto de ProjectList,
+  // porque ChatBot.tsx setea sessionStorage["project_id"] antes de disparar
+  // el evento "chat-session-changed".
   const getActiveProjectId = () => {
     if (typeof window === "undefined") return "";
     return sessionStorage.getItem("project_id") || "";
   };
 
-  // Convierte la respuesta de Firestore (array de widgets) en Widget[]
-  const mapDataToWidgets = (data: any[]): Widget[] => {
-    if (!Array.isArray(data)) return [];
-    return data.map((item, index) => ({
-      posicion: item.posicion ?? index,
-      id_widget: item.id_widget ?? `w_${index}`,
-      titulo: item.titulo ?? "",
-      objetivo_widget: item.objetivo_widget ?? "",
-      descripcion_campos: item.descripcion_campos ?? {},
-      campos: item.campos ?? {},
-    }));
+  // Convierte el objeto de Firestore al array de Widget[] que consume DynamicVisor.
+  // Firestore devuelve: { posiciones: ["w_000", "w_001", ...], w_000: { titulo, campos, ... }, ... }
+  // Esta función usa "posiciones" para ordenar y construir el array.
+  const mapDataToWidgets = (data: any): Widget[] => {
+    const posiciones: string[] = data.posiciones ?? [];
+    return posiciones.map((widgetId, index) => {
+      const w = data[widgetId] ?? {};
+      return {
+        posicion: index,
+        id_widget: widgetId,
+        titulo: w.titulo ?? widgetId,
+        objetivo_widget: w.objetivo_widget ?? "",
+        descripcion_campos: w.descripcion_campos ?? {},
+        campos: w.campos ?? {},
+      };
+    });
   };
 
   useEffect(() => {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    // Compara dos snapshots del documento y devuelve los paths que cambiaron
+    // Compara recursivamente dos snapshots del documento de Firestore.
+    // Devuelve un Set con los paths de los campos que cambiaron,
+    // ej: "w_000.campos.SOLICITANTE", "w_001.campos.DESCRIPCION_INICIATIVA"
+    // Estos paths se pasan a DynamicVisor como changedFields para resaltar en amarillo.
     const detectChanges = (oldData: any, newData: any) => {
       const changed = new Set<string>();
 
@@ -139,9 +130,15 @@ export default function Documentacion({
       return changed;
     };
 
+    // Descarga el documento de Firestore usando el project_id activo.
+    // Se llama:
+    //   1. Al montar el componente (carga inicial)
+    //   2. Cuando el chat recibe respuesta del bot → evento "ers-refresh"
+    //   3. Cuando el usuario cambia de proyecto → evento "chat-session-changed"
     const fetchERS = async () => {
       try {
         const docId = getActiveProjectId();
+        console.log("🔵 fetchERS corriendo con docId:", docId);
         if (!docId) return;
 
         const response = await fetch(
@@ -156,49 +153,29 @@ export default function Documentacion({
         if (!response.ok) throw new Error("No se pudo obtener el ERS");
 
         const json = await response.json();
-        console.log("json completo:", JSON.stringify(json, null, 2));  
-        console.log("json.data →", json.data);
-        console.log("posiciones →", json.data?.posiciones);
+        console.log("🟢 json.data →", json.data);
 
         if (isMounted && json.ok && json.data) {
-          // Detectar cambios respecto al estado anterior de widgets
-          setWidgets((prev) => {
-            const changes = prev.length > 0
-              ? detectChanges(prev, json.data)
-              : new Set<string>();
+          // Compara el nuevo snapshot con el anterior para detectar qué cambió.
+          // Si hay cambios, los resalta en amarillo durante 5 segundos.
+          const changes = prevRawDataRef.current
+            ? detectChanges(prevRawDataRef.current, json.data)
+            : new Set<string>();
 
-            if (changes.size > 0) {
-              console.log("🟡 changedFields:", [...changes]);
-              setChangedFields(changes);
-              if (timeoutId) clearTimeout(timeoutId);
-              timeoutId = setTimeout(() => {
-                if (isMounted) setChangedFields(new Set());
-              }, 5000);
-            }
+          if (changes.size > 0) {
+            console.log("🟡 changedFields:", [...changes]);
+            setChangedFields(changes);
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+              if (isMounted) setChangedFields(new Set());
+            }, 5000);
+          }
 
-            // Firestore devuelve array de widgets directamente
-            if (Array.isArray(json.data)) {
-              return mapDataToWidgets(json.data);
-            }
+          // Guarda el snapshot actual para la próxima comparación.
+          prevRawDataRef.current = json.data;
 
-            // O puede venir con posiciones (formato antiguo)
-            if (json.data.posiciones) {
-              const { posiciones, ...widgetMap } = json.data;
-              return posiciones.map((widgetId: string, index: number) => {
-                const widgetData = widgetMap[widgetId] as WidgetFromApi;
-                return {
-                  posicion: index,
-                  id_widget: widgetId,
-                  titulo: widgetData.titulo ?? widgetId,
-                  objetivo_widget: widgetData.objetivo_widget ?? "",
-                  descripcion_campos: widgetData.descripcion_campos ?? {},
-                  campos: widgetData.campos ?? {},
-                };
-              });
-            }
-
-            return prev;
-          });
+          // Convierte y actualiza los widgets en pantalla.
+          setWidgets(mapDataToWidgets(json.data));
         }
       } catch (error) {
         console.error("Error cargando ERS:", error);
@@ -207,9 +184,13 @@ export default function Documentacion({
       }
     };
 
-    const handleRefresh = () => fetchERS();
+    // El setTimeout de 100ms en chat-session-changed es necesario porque
+    // ChatBot.tsx setea sessionStorage["project_id"] y luego dispara el evento
+    // casi simultáneamente — el delay garantiza que sessionStorage ya tiene
+    // el nuevo project_id cuando fetchERS lo lee.
+    const handleRefresh = () => setTimeout(() => fetchERS(), 100);
 
-    fetchERS();
+    fetchERS(); // carga inicial
 
     window.addEventListener("ers-refresh", handleRefresh);
     window.addEventListener("chat-session-changed", handleRefresh);
@@ -226,22 +207,16 @@ export default function Documentacion({
     ? "flex-1 h-full min-w-[520px] transition-all duration-300"
     : "w-full max-w-xs h-full transition-all duration-300";
 
-  const activeUrl = DRAWIO_EMBED_URL;
-
   const handleDownload = async () => {
     try {
-      const downloadUrl = DRAWIO_EMBED_URL;
-      const response = await fetch(downloadUrl);
+      const response = await fetch(DRAWIO_EMBED_URL);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
-
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download =
-        tab === "Arquitectura"
-          ? "arquitectura.drawio"
-          : `${DOC_NAMES[tab].replace(/ /g, "_")}.docx`;
-
+      link.download = tab === "Arquitectura"
+        ? "arquitectura.drawio"
+        : `${DOC_NAMES[tab].replace(/ /g, "_")}.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -256,10 +231,7 @@ export default function Documentacion({
   return (
     <>
       {showPopup && (
-        <DownloadPopup
-          docName={DOC_NAMES[tab]}
-          onClose={() => setShowPopup(false)}
-        />
+        <DownloadPopup docName={DOC_NAMES[tab]} onClose={() => setShowPopup(false)} />
       )}
 
       <section className={wrapperClass}>
@@ -271,12 +243,11 @@ export default function Documentacion({
             {expanded ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
 
+          {/* ── Vista colapsada: miniaturas de los 3 documentos ── */}
           {!expanded && (
             <div className="flex h-full flex-col gap-3">
               <div className="shrink-0">
-                <h1 className="text-xl font-bold text-[#EB0029]">
-                  Documentos de Salida
-                </h1>
+                <h1 className="text-xl font-bold text-[#EB0029]">Documentos de Salida</h1>
                 <div className="mt-1 h-[2px] w-full bg-[#EB0029]" />
               </div>
 
@@ -291,18 +262,14 @@ export default function Documentacion({
                       {t === "ERS" || t === "Análisis" ? (
                         <div
                           className="pointer-events-none h-full w-full overflow-hidden"
-                          style={{
-                            transform: "scale(0.33)",
-                            transformOrigin: "top left",
-                            width: "303%",
-                            height: "303%",
-                          }}
+                          style={{ transform: "scale(0.33)", transformOrigin: "top left", width: "303%", height: "303%" }}
                         >
                           {loadingERS ? (
                             <div className="flex h-full items-center justify-center text-sm text-gray-500">
                               Cargando ERS...
                             </div>
                           ) : (
+                            // Pasa changedFields para que DynamicVisor resalte los campos modificados
                             <WidgetRenderer widgets={widgets} changedFields={changedFields} />
                           )}
                         </div>
@@ -311,21 +278,12 @@ export default function Documentacion({
                           src={DRAWIO_EMBED_URL}
                           className="border-0"
                           title={DOC_NAMES[t]}
-                          style={{
-                            pointerEvents: "none",
-                            width: "170%",
-                            height: "170%",
-                            transform: "scale(0.588)",
-                            transformOrigin: "top left",
-                          }}
+                          style={{ pointerEvents: "none", width: "170%", height: "170%", transform: "scale(0.588)", transformOrigin: "top left" }}
                         />
                       )}
 
                       <button
-                        onClick={() => {
-                          setTab(t);
-                          onToggle();
-                        }}
+                        onClick={() => { setTab(t); onToggle(); }}
                         className="group absolute inset-0 h-full w-full bg-transparent transition hover:bg-[#EB0029]/5"
                         title="Expandir para ver completo"
                       >
@@ -340,6 +298,7 @@ export default function Documentacion({
             </div>
           )}
 
+          {/* ── Vista expandida: documento completo con tabs ── */}
           {expanded && (
             <>
               <div className="relative mb-5 flex items-center justify-center">
@@ -383,7 +342,7 @@ export default function Documentacion({
                 ) : (
                   <iframe
                     key={tab}
-                    src={activeUrl}
+                    src={DRAWIO_EMBED_URL}
                     className="h-full w-full border-0"
                     title={tab}
                     allow="fullscreen"
@@ -395,7 +354,7 @@ export default function Documentacion({
         </div>
       </section>
 
-      {/* WidgetsModal recibe widgets para mostrar el doc actualizado */}
+      {/* WidgetsModal recibe los widgets actuales para mostrar el doc en el modal */}
       <WidgetsModal
         isOpen={isWidgetsOpen}
         onClose={() => setIsWidgetsOpen(false)}
