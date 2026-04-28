@@ -1,58 +1,48 @@
 [
   {
     "posicion": 1,
-    "id_widget": "widget_1",
+    "id_widget": "w_001",
     "titulo": "Descripción de la Iniciativa",
     "objetivo_widget": "Gestión de la descripción de la iniciativa",
     "descripcion_campos": {
       "DESCRIPCION_INICIATIVA": "Descripción de la iniciativa"
     },
     "campos": {
-      "DESCRIPCION_INICIATIVA": "Adquisición e implementación de un Sistema de Comercio Exterior moderno"
+      "DESCRIPCION_INICIATIVA": null
     }
   },
   {
     "posicion": 2,
-    "id_widget": "widget_2",
+    "id_widget": "w_002",
     "titulo": "Objetivos y Alcance",
     "objetivo_widget": "Gestión de los objetivos y alcance de la iniciativa",
     "descripcion_campos": {
-      "OBJETIVOS_ALCANCE": "Objetivos y alcance de la iniciativa"
+      "OBJETIVO": "Objetivo",
+      "ALCANCE": "Alcance"
     },
     "campos": {
-      "OBJETIVOS_ALCANCE": "Sustituir la plataforma actual con una nueva solución que gestione operaciones"
+      "OBJETIVO": null,
+      "ALCANCE": null
     }
   },
   {
     "posicion": 3,
-    "id_widget": "widget_3",
-    "titulo": "Áreas Impactadas",
-    "objetivo_widget": "Gestión de las áreas impactadas por la iniciativa",
+    "id_widget": "w_003",
+    "titulo": "Riesgos",
+    "objetivo_widget": "Identificar y documentar los riesgos asociados a la iniciativa",
     "descripcion_campos": {
-      "AREAS_IMPACTADAS": "Áreas impactadas"
+      "filas": "Listado de riesgos",
+      "TIPO": "Tipo de riesgo",
+      "PROBABLE_PERDIDA": "Probable pérdida",
+      "JUSTIFICACION": "Justificación"
     },
     "campos": {
-      "AREAS_IMPACTADAS": [
-        {
-          "AREA_NEGOCIO": "11",
-          "PROCESO_IMPACTO": "Ventas y Operaciones"
-        },
-        {
-          "AREA_NEGOCIO": "12",
-          "PROCESO_IMPACTO": "Validaciones y Nuevas Interfaces"
-        },
-        {
-          "AREA_NEGOCIO": "Jurídico y Normativa",
-          "PROCESO_IMPACTO": "Actualización de políticas y procedimientos"
-        },
-        {
-          "AREA_NEGOCIO": "Manuales y Documentación",
-          "PROCESO_IMPACTO": "Creación de manuales de usuarios y técnicos"
-        },
-        {
-          "AREA_NEGOCIO": "Capacitaciones",
-          "PROCESO_IMPACTO": "Capacitación para personal y clientes"
-        }
+      "filas": [
+        { "TIPO": "Credito", "PROBABLE_PERDIDA": null, "JUSTIFICACION": null },
+        { "TIPO": "Liquidez", "PROBABLE_PERDIDA": null, "JUSTIFICACION": null },
+        { "TIPO": "Mercado", "PROBABLE_PERDIDA": null, "JUSTIFICACION": null },
+        { "TIPO": "Operativo", "PROBABLE_PERDIDA": null, "JUSTIFICACION": null },
+        { "TIPO": "Reputacional", "PROBABLE_PERDIDA": null, "JUSTIFICACION": null }
       ]
     }
   }

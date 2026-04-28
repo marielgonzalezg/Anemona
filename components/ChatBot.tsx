@@ -2,7 +2,6 @@
 
 import { LayoutGrid, SendHorizonal, Bot, User, X, LayoutDashboard} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import WidgetsModal from "./WidgetsModal";
 import FormModal from "./FormModal";
 
 
@@ -14,7 +13,6 @@ type Msg = {
 
 export default function ChatBot() {
 
-  const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
     
@@ -406,18 +404,13 @@ export default function ChatBot() {
           {/* Botón Widgets */}
         {/* Botón Widgets en la misma fila */}
   <button 
-    onClick={() => setIsWidgetsOpen(!isWidgetsOpen)} 
+    onClick={() => window.dispatchEvent(new CustomEvent("open-widgets-modal"))} //  comunicar el evento de abrir el modal desde ChatBot hacia Documentacion
     className="widgets-btn bg-[#EB0029] text-white font-semibold text-sm px-5 py-3 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
   >
     <LayoutDashboard size={20} className="mr-1" />
     Widgets
   </button>
 </div>
-
-          {/* Widgets modal */}
-          
-          {isWidgetsOpen && <WidgetsModal isOpen={isWidgetsOpen} onClose={() => setIsWidgetsOpen(false)} widgets={[]} />}
-
 
       </div>
       <FormModal

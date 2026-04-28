@@ -176,6 +176,7 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
 
           // Convierte y actualiza los widgets en pantalla.
           setWidgets(mapDataToWidgets(json.data));
+
         }
       } catch (error) {
         console.error("Error cargando ERS:", error);
@@ -195,13 +196,24 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
     window.addEventListener("ers-refresh", handleRefresh);
     window.addEventListener("chat-session-changed", handleRefresh);
 
+
+
     return () => {
       isMounted = false;
       window.removeEventListener("ers-refresh", handleRefresh);
       window.removeEventListener("chat-session-changed", handleRefresh);
+
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
+
+  useEffect(() => {
+  const handleOpenWidgets = () => setIsWidgetsOpen(true);
+  window.addEventListener("open-widgets-modal", handleOpenWidgets);
+  return () => {
+    window.removeEventListener("open-widgets-modal", handleOpenWidgets);
+  };
+}, []);
 
   const wrapperClass = expanded
     ? "flex-1 h-full min-w-[520px] transition-all duration-300"
