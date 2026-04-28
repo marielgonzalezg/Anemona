@@ -73,8 +73,12 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
       id_widget: draggingWidget.id_widget,
       titulo: draggingWidget.titulo,
       objetivo_widget: draggingWidget.objetivo_widget,
-      descripcion_campos: draggingWidget.descripcion_campos as Record<string, string>,
-      campos: { ...draggingWidget.campos } as Record<string, any>,
+      descripcion_campos: Object.fromEntries(
+  Object.entries(draggingWidget.descripcion_campos || {}).filter(
+    ([_, v]) => typeof v === "string"
+  )
+),
+        campos: { ...draggingWidget.campos } as Record<string, any>,
       _isNew: true, // <- agrega esto
     };
     // borra el setNewWidgetIndices que viene después
