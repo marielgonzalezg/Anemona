@@ -85,7 +85,10 @@ export const EditableText = ({
   note?: string;
   noteColor?: string;
 }) {
-  return (
+
+
+
+return (
     <div className="mb-4 mt-6">
       <div className="flex items-start gap-3 border-t-2 border-black pt-2 w-full">
         <span className="text-[18px] shrink-0">{number}</span>
@@ -127,9 +130,7 @@ function BodyText({
 }) {
   return <div className={`text-[13px] leading-[1.2] ${className}`}>{children}</div>;
 }
-
 /* ================== W000 ================== */
-
 export const renderW000 = (
   widget: Widget,
   onChange: (posicion: number, key: string, value: string) => void

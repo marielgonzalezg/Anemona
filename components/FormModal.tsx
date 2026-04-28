@@ -210,6 +210,7 @@ export default function FormModal({
         PROCESO_IMPACTO: null,
       }));
 
+
       const payload = {
         formulario: {
           solicitante: formData.solicitante || null,
@@ -224,80 +225,230 @@ export default function FormModal({
           usuario_nombre: null,
           usuario_id: tempUserId || localStorage.getItem("idusuario") || null,
         },
-        plantilla: {
-          DATOS_GENERALES: {
-            SOLICITANTE: null,
-            INFO_CONTACTO: null,
-            DGA: null,
-            PATROCINADOR: null,
-            CR: null,
-            SOCIO: null,
-            NOMBRE_INICIATIVA: null,
-            TIPO_INICIATIVA: null,
-          },
-          DESCRIPCION_INICIATIVA: null,
-          OBJETIVOS_ALCANCE: {
-            OBJETIVO: null,
-            ALCANCE: null,
-          },
-          AREAS_IMPACTADAS: areasImpactadasConNombre,
-          TABLA_FR: {
-            AREA_PARTICIPANTE: null,
-            RESPONSABLE: null,
-          },
-          REQUERIMIENTO_REGULATORIO: {
-            AUTORIDAD: null,
-            FECHA_EMISION: null,
-            FECHA_RECEPCION: null,
-            FECHA_ENTRADA_VIGOR: null,
-            MONTO_SANCION: null,
-            SISTEMAS_APLICATIVOS: [],
-          },
-          REQUERIMIENTO_NO_REGULATORIO: {
-            ES_URGENTE: null,
-            FECHA_LIMITE: null,
-          },
-          REQUERIMIENTO_PERIODICO: {
-            PERIODICIDAD: null,
-            FECHAS_ENTREGA: [],
-          },
-          BENEFICIOS: {
-            OTROS_BENEFICIOS: null,
-          },
-          PARTICIPACION_OTRAS_AREAS: null,
-          RIESGOS: [
-            {
-              TIPO: "Credito",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Liquidez",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Mercado",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Operativo",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Reputacional",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-          ],
-          EXCLUSIONES: null,
-          SUPUESTOS: null,
-          RESTRICCIONES: null,
-          ANEXOS: [],
-        },
-      };
+        plantilla: [{
+  
+    id_widget: "w_000",
+    posicion: 0,
+    titulo: "Datos generales de la iniciativa",
+    objetivo_widget: "Capturar la información general y administrativa de la iniciativa.",
+    descripcion_campos: {
+      SOLICITANTE: "Solicitante",
+      INFO_CONTACTO: "Información de contacto",
+      DGA: "Dirección General Adjunta",
+      PATROCINADOR: "Patrocinador",
+      CR: "Centro de Responsabilidad",
+      SOCIO: "Nombre del Socio de Negocio",
+      NOMBRE_INICIATIVA: "Nombre de la iniciativa",
+      TIPO_INICIATIVA: "Tipo de la iniciativa",
+    },
+    campos: {
+      SOLICITANTE: null,
+      INFO_CONTACTO: null,
+      DGA: null,
+      PATROCINADOR: null,
+      CR: null,
+      SOCIO: null,
+      NOMBRE_INICIATIVA: null,
+      TIPO_INICIATIVA: null,
+    },
+  },
+  {
+    id_widget: "w_001",
+    posicion: 1,
+    titulo: "Descripción de la iniciativa",
+    objetivo_widget: "Describir de manera general la iniciativa, su propósito y contexto.",
+    descripcion_campos: {
+      DESCRIPCION_INICIATIVA: "Descripción de la iniciativa",
+    },
+    campos: {
+      DESCRIPCION_INICIATIVA: null,
+    },
+  },
+  {
+    id_widget: "w_002", 
+    posicion: 2,
+    titulo: "Objetivos y alcance",
+    objetivo_widget: "Definir el objetivo principal y el alcance de la iniciativa.",
+    descripcion_campos: {
+      OBJETIVO: "Objetivo",
+      ALCANCE: "Alcance",
+    },
+    campos: {
+      OBJETIVO: null,
+      ALCANCE: null,
+    },
+  },
+   {
+    id_widget: "w_003",
+    posicion: 3,
+    titulo: "Áreas impactadas",
+    objetivo_widget: "Identificar las áreas de la organización que serán impactadas.",
+    descripcion_campos: {
+      AREAS_IMPACTADAS: "Áreas impactadas",
+    },
+    campos: {
+      AREAS_IMPACTADAS: areasImpactadasConNombre,
+    },
+  },
+   {
+    id_widget: "w_004",
+    posicion: 4,
+    titulo: "Tabla FR",
+    objetivo_widget: "Asignar responsables y áreas participantes en la iniciativa.",
+    descripcion_campos: {
+      AREA_PARTICIPANTE: "Área participante",
+      RESPONSABLE: "Responsable",
+    },
+    campos: {
+      AREA_PARTICIPANTE: null,
+      RESPONSABLE: null,
+    },
+  },
+  {
+    id_widget: "w_005", 
+    posicion: 5,
+    titulo: "Requerimiento regulatorio",
+    objetivo_widget: "Registrar información relacionada con requerimientos regulatorios aplicables.",
+    descripcion_campos: {
+      AUTORIDAD: "Autoridad",
+      FECHA_EMISION: "Fecha de emisión",
+      FECHA_RECEPCION: "Fecha de recepción",
+      FECHA_ENTRADA_VIGOR: "Fecha de entrada en vigor",
+      MONTO_SANCION: "Monto de sanción",
+      SISTEMAS_APLICATIVOS: "Sistemas aplicativos",
+    },
+    campos: {
+      AUTORIDAD: null,
+      FECHA_EMISION: null,
+      FECHA_RECEPCION: null,
+      FECHA_ENTRADA_VIGOR: null,
+      MONTO_SANCION: null,
+      SISTEMAS_APLICATIVOS: [],
+    },
+  },
+   {
+    id_widget: "w_006",
+    posicion: 6,
+    titulo: "Requerimiento no regulatorio",
+    objetivo_widget: "Capturar requerimientos internos o no regulados.",
+    descripcion_campos: {
+      ES_URGENTE: "Es urgente",
+      FECHA_LIMITE: "Fecha límite",
+    },
+    campos: {
+      ES_URGENTE: null,
+      FECHA_LIMITE: null,
+    },
+  },
+  {
+    id_widget: "w_007",
+    posicion: 7,
+    titulo: "Requerimiento periódico",
+    objetivo_widget: "Definir periodicidad y fechas de entrega de requerimientos recurrentes.",
+    descripcion_campos: {
+      PERIODICIDAD: "Periodicidad",
+      FECHAS_ENTREGA: "Fechas de entrega",
+    },
+    campos: {
+      PERIODICIDAD: null,
+      FECHAS_ENTREGA: [],
+    },
+  },
+  {
+    id_widget: "w_008",
+    posicion: 8,
+    titulo: "Beneficios",
+    objetivo_widget: "Identificar beneficios adicionales derivados de la iniciativa.",
+    descripcion_campos: {
+      OTROS_BENEFICIOS: "Otros beneficios",
+    },
+    campos: {
+      OTROS_BENEFICIOS: null,
+    },
+  },
+   {
+    id_widget: "w_010",
+    posicion: 9,
+    titulo: "Participación de otras áreas",
+    objetivo_widget: "Registrar la participación de otras áreas en la iniciativa.",
+    descripcion_campos: {
+      PARTICIPACION_OTRAS_AREAS: "Participación de otras áreas",
+    },
+    campos: {
+      PARTICIPACION_OTRAS_AREAS: null,
+    },
+  },
+  {
+    id_widget: "w_010",
+    posicion: 10,
+    titulo: "Riesgos",
+    objetivo_widget: "Identificar y documentar los riesgos asociados a la iniciativa.",
+    descripcion_campos: {
+      filas: "Listado de riesgos",
+      TIPO: "Tipo de riesgo",
+      PROBABLE_PERDIDA: "Probable pérdida",
+      JUSTIFICACION: "Justificación",
+    },
+    campos: {
+      filas: [
+        { TIPO: "Credito",      PROBABLE_PERDIDA: null, JUSTIFICACION: null },
+        { TIPO: "Liquidez",     PROBABLE_PERDIDA: null, JUSTIFICACION: null },
+        { TIPO: "Mercado",      PROBABLE_PERDIDA: null, JUSTIFICACION: null },
+        { TIPO: "Operativo",    PROBABLE_PERDIDA: null, JUSTIFICACION: null },
+        { TIPO: "Reputacional", PROBABLE_PERDIDA: null, JUSTIFICACION: null },
+      ],
+    },
+  },
+  {
+    id_widget: "w_011",
+    posicion: 11,
+    titulo: "Exclusiones",
+    objetivo_widget: "Definir los elementos fuera del alcance de la iniciativa.",
+    descripcion_campos: {
+      EXCLUSIONES: "Exclusiones",
+    },
+    campos: {
+      EXCLUSIONES: null,
+    },
+  },
+   {
+    id_widget: "w_012",
+    posicion: 12,
+    titulo: "Supuestos",
+    objetivo_widget: "Registrar los supuestos considerados para la iniciativa.",
+    descripcion_campos: {
+      SUPUESTOS: "Supuestos",
+    },
+    campos: {
+      SUPUESTOS: null,
+    },
+  },
+  {
+    id_widget: "w_013",
+    posicion: 13,
+    titulo: "Restricciones",
+    objetivo_widget: "Documentar las restricciones que afectan la iniciativa.",
+    descripcion_campos: {
+      RESTRICCIONES: "Restricciones",
+    },
+    campos: {
+      RESTRICCIONES: null,
+    },
+  },
+  {
+    id_widget:"w_014",
+    posicion: 14,
+    titulo: "Anexos",
+    objetivo_widget: "Adjuntar documentación adicional relevante a la iniciativa.",
+    descripcion_campos: {
+      ANEXOS: "Anexos",
+    },
+    campos: {
+      ANEXOS: [],
+    },
+  },
+]
+      }
 
       console.log("📦 PAYLOAD QUE SE ENVÍA:");
       console.log(JSON.stringify(payload, null, 2));
