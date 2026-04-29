@@ -1,7 +1,7 @@
 [
   {
-    "posicion": 1,
     "id_widget": "w_001",
+    "posicion": 1,
     "titulo": "Descripción de la Iniciativa",
     "objetivo_widget": "Gestión de la descripción de la iniciativa",
     "descripcion_campos": {
@@ -12,8 +12,8 @@
     }
   },
   {
-    "posicion": 2,
     "id_widget": "w_002",
+    "posicion": 2,
     "titulo": "Objetivos y Alcance",
     "objetivo_widget": "Gestión de los objetivos y alcance de la iniciativa",
     "descripcion_campos": {
@@ -26,8 +26,8 @@
     }
   },
   {
-    "posicion": 3,
     "id_widget": "w_003",
+    "posicion": 3,
     "titulo": "Riesgos",
     "objetivo_widget": "Identificar y documentar los riesgos asociados a la iniciativa",
     "descripcion_campos": {

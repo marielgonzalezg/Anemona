@@ -61,7 +61,7 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
     setLoading(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/widgets/modificar?doc_id=${encodeURIComponent(docId)}`,
+        `http://127.0.0.1:8000/widgets/modificar/${encodeURIComponent(docId)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -81,11 +81,11 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
   // Renderiza el widget correcto según su id
   const renderWidget = (widget: Widget) => {
     switch (widget.id_widget) {
-      case "w_000": return renderW000(widget, handleChange, highlight);
-      case "w_001": return renderW001(widget, handleChange, highlight);
-      case "w_002": return renderW002(widget, handleChange, highlight);
-      case "w_003": return renderW003(widget, handleChange, highlight);
-      default: return null;
+      case "w_000": return renderW000(widget, handleChange, highlight); //
+      case "w_001": return renderW001(widget, handleChange, highlight); //
+      case "w_002": return renderW002(widget, handleChange, highlight); //
+      case "w_003": return renderW003(widget, handleChange, highlight); //
+      default: return null; 
     }
   };
 
@@ -198,7 +198,7 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
         <button
           onClick={handleSave}
           disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+          className="bg-[#EB0029] text-white px-6 py-2 rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Guardando..." : "Guardar cambios"}
         </button>

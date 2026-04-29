@@ -389,7 +389,8 @@ export const renderW003 = (
   return (
     <div className="mb-8">
       <SubSection
-        title={`${widget.posicion}.1 ${widget.titulo || "Riesgos"}.`}
+        title={`${widget.posicion}.1 ${widget.campos?.titulo || widget.titulo || "Riesgos"}.`}
+        //title={`${widget.posicion}.1 ${widget.titulo || "Riesgos"}.`}
         note="(Obligatorio)"
         noteColor="text-red-600"
       />

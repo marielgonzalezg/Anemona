@@ -226,9 +226,8 @@ export default function FormModal({
           usuario_id: tempUserId || localStorage.getItem("idusuario") || null,
         },
         plantilla: [{
-  
-    id_widget: "w_000",
     posicion: 0,
+    id_widget: "w_000",
     titulo: "Datos generales de la iniciativa",
     objetivo_widget: "Capturar la información general y administrativa de la iniciativa.",
     descripcion_campos: {
@@ -253,50 +252,62 @@ export default function FormModal({
     },
   },
   {
-    id_widget: "w_001",
+    //// DONE
     posicion: 1,
+    id_widget: "w_001",
     titulo: "Descripción de la iniciativa",
     objetivo_widget: "Describir de manera general la iniciativa, su propósito y contexto.",
     descripcion_campos: {
-      DESCRIPCION_INICIATIVA: "Descripción de la iniciativa",
+      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+      "subtitulo": "OPCIONAL. Sobrescribe el subtítulo de la sección. Valor por defecto: 'Descripción general de la iniciativa'."
     },
     campos: {
-      DESCRIPCION_INICIATIVA: null,
+      "descripcion": "NULL",
+      "titulo":"1.	Descripción general de la iniciativa y justificación.",
+      "subtitulo":"Descripción General de la Iniciativa  "
     },
   },
   {
-    id_widget: "w_002", 
+    //// DONE
     posicion: 2,
+    id_widget: "w_002",
     titulo: "Objetivos y alcance",
-    objetivo_widget: "Definir el objetivo principal y el alcance de la iniciativa.",
+    objetivo_widget:
+      "Definir el objetivo principal y el alcance de la iniciativa.",
+    
     descripcion_campos: {
-      OBJETIVO: "Objetivo",
-      ALCANCE: "Alcance",
     },
     campos: {
-      OBJETIVO: null,
-      ALCANCE: null,
+      Titulo: "Objetivos de la iniciativa. ",
+      Seccion_1: "NULL",
+      Seccion_1Titulo: "Objetivo",
+      Seccion_2: "NULL",    
+      Seccion_2Titulo: "Alcance",
     },
   },
    {
-    id_widget: "w_003",
+    //// DONE pero no pq dario puso tirulos automaticos
+    id_widget: "w_030",
     posicion: 3,
-    titulo: "Áreas impactadas",
+    titulo: "Areas impactadas",
     objetivo_widget: "Identificar las áreas de la organización que serán impactadas.",
     descripcion_campos: {
-      AREAS_IMPACTADAS: "Áreas impactadas",
+      filas: "Listado de areas de negocio, que procesos la impactan y la descripcion del impacto",
+      AREA_NEGOCIO: "El area del negocio",
+      IMPACTOS: "el tipo de proceso y como impactan al area",
+      omg: "esta file no existe y debería ser dinamico para haceptar cualquier numero de filas",
     },
     campos: {
-      filas: [
-        {
-          TIPO:"Área de negocio",
-          PROBABLE_PERDIDA: "Proceso o actividad impactada",
-        }
+      filas: 
+      [
+        { AREA_NEGOCIO: "Área de negocio", IMPACTOS: "Proceso o actividad impactada", omg: "omg" },
       ],
     },
   },
    {
-    id_widget: "w_004",
+    //// POR HACER
+    id_widget: "w_021",
     posicion: 4,
     titulo: "Tabla FR",
     objetivo_widget: "Asignar responsables y áreas participantes en la iniciativa.",
@@ -310,7 +321,8 @@ export default function FormModal({
     },
   },
   {
-    id_widget: "w_005", 
+    //// POR HACER
+    id_widget: "w_020", 
     posicion: 5,
     titulo: "Requerimiento regulatorio",
     objetivo_widget: "Registrar información relacionada con requerimientos regulatorios aplicables.",
@@ -332,7 +344,8 @@ export default function FormModal({
     },
   },
    {
-    id_widget: "w_006",
+    //// POR HACER
+    id_widget: "w_034",
     posicion: 6,
     titulo: "Requerimiento no regulatorio",
     objetivo_widget: "Capturar requerimientos internos o no regulados.",
@@ -346,7 +359,8 @@ export default function FormModal({
     },
   },
   {
-    id_widget: "w_007",
+    //// POR HACER
+    id_widget: "w_008",
     posicion: 7,
     titulo: "Requerimiento periódico",
     objetivo_widget: "Definir periodicidad y fechas de entrega de requerimientos recurrentes.",
@@ -360,7 +374,8 @@ export default function FormModal({
     },
   },
   {
-    id_widget: "w_008",
+    //// POR HACER
+    id_widget: "w_009",
     posicion: 8,
     titulo: "Beneficios",
     objetivo_widget: "Identificar beneficios adicionales derivados de la iniciativa.",
@@ -372,6 +387,7 @@ export default function FormModal({
     },
   },
    {
+    //// POR HACER
     id_widget: "w_010",
     posicion: 9,
     titulo: "Participación de otras áreas",
@@ -384,7 +400,8 @@ export default function FormModal({
     },
   },
   {
-    id_widget: "w_010",
+    //// DONE
+    id_widget: "w_003",
     posicion: 10,
     titulo: "Riesgos",
     objetivo_widget: "Identificar y documentar los riesgos asociados a la iniciativa.",
@@ -396,16 +413,13 @@ export default function FormModal({
     },
     campos: {
       filas: [
-        { TIPO: "Credito",      PROBABLE_PERDIDA: null, JUSTIFICACION: null },
-        { TIPO: "Liquidez",     PROBABLE_PERDIDA: null, JUSTIFICACION: null },
-        { TIPO: "Mercado",      PROBABLE_PERDIDA: null, JUSTIFICACION: null },
-        { TIPO: "Operativo",    PROBABLE_PERDIDA: null, JUSTIFICACION: null },
-        { TIPO: "Reputacional", PROBABLE_PERDIDA: null, JUSTIFICACION: null },
+        { TIPO: "N/A",      PROBABLE_PERDIDA: "N/A", JUSTIFICACION: "N/A" },
       ],
     },
   },
   {
-    id_widget: "w_011",
+    //// POR HACER
+    id_widget: "w_012",
     posicion: 11,
     titulo: "Exclusiones",
     objetivo_widget: "Definir los elementos fuera del alcance de la iniciativa.",
@@ -417,7 +431,8 @@ export default function FormModal({
     },
   },
    {
-    id_widget: "w_012",
+    //// POR HACER
+    id_widget: "w_013",
     posicion: 12,
     titulo: "Supuestos",
     objetivo_widget: "Registrar los supuestos considerados para la iniciativa.",
@@ -429,7 +444,8 @@ export default function FormModal({
     },
   },
   {
-    id_widget: "w_013",
+    //// POR HACER
+    id_widget: "w_014",
     posicion: 13,
     titulo: "Restricciones",
     objetivo_widget: "Documentar las restricciones que afectan la iniciativa.",
@@ -441,7 +457,8 @@ export default function FormModal({
     },
   },
   {
-    id_widget:"w_014",
+    //// POR HACER
+    id_widget:"w_015",
     posicion: 14,
     titulo: "Anexos",
     objetivo_widget: "Adjuntar documentación adicional relevante a la iniciativa.",

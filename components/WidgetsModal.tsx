@@ -110,15 +110,17 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
 
     setSaving(true);
     try {
+      
+      const payload = docWidgets.map(({ _isNew, ...w }) => w);
       console.log("💾 GUARDANDO PLANTILLA:");
-      console.log(JSON.stringify(docWidgets, null, 2));
+      console.log(JSON.stringify(payload, null, 2)); // <- usa payload
 
       const res = await fetch(
-        `http://127.0.0.1:8000/widgets/modificar?doc_id=${encodeURIComponent(docId)}`,
+        `http://127.0.0.1:8000/widgets/modificar/${encodeURIComponent(docId)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(docWidgets),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -129,6 +131,7 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
 
       // Al guardar exitosamente, quita el resaltado amarillo
       alert("✅ Plantilla guardada correctamente");
+      window.dispatchEvent(new CustomEvent("ers-refresh")); // <- agrega esto
     } catch (e) {
       console.error(e);
       alert("❌ Error al guardar la plantilla");
