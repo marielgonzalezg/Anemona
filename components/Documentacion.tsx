@@ -14,6 +14,8 @@ import {
   Download,
   CheckCircle,
   X,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import WidgetRenderer from "./DynamicVisor";
 import WidgetsModal from "./WidgetsModal";
@@ -21,6 +23,8 @@ import { Widget } from "./widgets/BibliotecaWidgets";
 
 const DRAWIO_EMBED_URL =
   "https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagramaarq.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1K0pWBSO4_RdxmUlAippvNTiQZfnkcoSJ%26export%3Ddownload";
+
+const API_BASE = "https://api-anemona-637376850775.northamerica-northeast1.run.app";
 
 const DOC_NAMES: Record<"ERS" | "Análisis" | "Arquitectura", string> = {
   ERS: "Documento ERS",
@@ -53,6 +57,31 @@ function DownloadPopup({ docName, onClose }: { docName: string; onClose: () => v
   );
 }
 
+function EmailPopup({ success, message, onClose }: { success: boolean; message: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative mx-4 flex min-w-[300px] max-w-sm animate-in zoom-in fade-in flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-2xl duration-200">
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 transition hover:text-gray-600">
+          <X size={18} />
+        </button>
+        <div className={`rounded-full p-4 ${success ? "bg-green-100" : "bg-red-100"}`}>
+          {success ? <CheckCircle className="text-green-500" size={36} /> : <X className="text-red-500" size={36} />}
+        </div>
+        <div className="text-center">
+          <h2 className="mb-1 text-lg font-bold text-gray-800">
+            {success ? "¡Correo enviado!" : "Error al enviar"}
+          </h2>
+          <p className="text-sm text-gray-500">{message}</p>
+        </div>
+        <button onClick={onClose} className="mt-2 rounded-full bg-[#EB0029] px-8 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#c8001f]">
+          Aceptar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Documentacion({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   const [tab, setTab] = useState<"ERS" | "Análisis" | "Arquitectura">("ERS");
   const [showPopup, setShowPopup] = useState(false);
@@ -60,24 +89,23 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
   const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailPopup, setEmailPopup] = useState<{ show: boolean; success: boolean; message: string }>({
+    show: false, success: false, message: "",
+  });
 
-  // Ref para guardar el último snapshot raw de Firestore.
-  // Usamos ref (no state) porque fetchERS vive en un closure del useEffect
-  // y no puede ver los valores actualizados de state — pero sí puede ver refs.
   const prevRawDataRef = useRef<any>(null);
 
-  // Lee el project_id del sessionStorage.
-  // Se actualiza cuando el usuario hace click en un proyecto de ProjectList,
-  // porque ChatBot.tsx setea sessionStorage["project_id"] antes de disparar
-  // el evento "chat-session-changed".
   const getActiveProjectId = () => {
     if (typeof window === "undefined") return "";
     return sessionStorage.getItem("project_id") || "";
   };
 
-  // Convierte el objeto de Firestore al array de Widget[] que consume DynamicVisor.
-  // Firestore devuelve: { posiciones: ["w_000", "w_001", ...], w_000: { titulo, campos, ... }, ... }
-  // Esta función usa "posiciones" para ordenar y construir el array.
+  const getToken = () => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("token") || "";
+  };
+
   const mapDataToWidgets = (data: any): Widget[] => {
     const posiciones: string[] = data.posiciones ?? [];
     return posiciones.map((widgetId, index) => {
@@ -97,13 +125,8 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    // Compara recursivamente dos snapshots del documento de Firestore.
-    // Devuelve un Set con los paths de los campos que cambiaron,
-    // ej: "w_000.campos.SOLICITANTE", "w_001.campos.DESCRIPCION_INICIATIVA"
-    // Estos paths se pasan a DynamicVisor como changedFields para resaltar en amarillo.
     const detectChanges = (oldData: any, newData: any) => {
       const changed = new Set<string>();
-
       const compare = (obj1: any, obj2: any, path = "") => {
         if (Array.isArray(obj2)) {
           obj2.forEach((item, index) => {
@@ -125,16 +148,10 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
           }
         }
       };
-
       compare(oldData, newData);
       return changed;
     };
 
-    // Descarga el documento de Firestore usando el project_id activo.
-    // Se llama:
-    //   1. Al montar el componente (carga inicial)
-    //   2. Cuando el chat recibe respuesta del bot → evento "ers-refresh"
-    //   3. Cuando el usuario cambia de proyecto → evento "chat-session-changed"
     const fetchERS = async () => {
       try {
         const docId = getActiveProjectId();
@@ -143,11 +160,7 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
 
         const response = await fetch(
           `https://api-anemona-637376850775.northamerica-northeast1.run.app/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
-          {
-            method: "GET",
-            headers: { accept: "application/json" },
-            cache: "no-store",
-          }
+          { method: "GET", headers: { accept: "application/json" }, cache: "no-store" }
         );
 
         if (!response.ok) throw new Error("No se pudo obtener el ERS");
@@ -156,8 +169,6 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
         console.log("🟢 json.data →", json.data);
 
         if (isMounted && json.ok && json.data) {
-          // Compara el nuevo snapshot con el anterior para detectar qué cambió.
-          // Si hay cambios, los resalta en amarillo durante 5 segundos.
           const changes = prevRawDataRef.current
             ? detectChanges(prevRawDataRef.current, json.data)
             : new Set<string>();
@@ -171,12 +182,8 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
             }, 5000);
           }
 
-          // Guarda el snapshot actual para la próxima comparación.
           prevRawDataRef.current = json.data;
-
-          // Convierte y actualiza los widgets en pantalla.
           setWidgets(mapDataToWidgets(json.data));
-
         }
       } catch (error) {
         console.error("Error cargando ERS:", error);
@@ -185,35 +192,67 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
       }
     };
 
-    // El setTimeout de 100ms en chat-session-changed es necesario porque
-    // ChatBot.tsx setea sessionStorage["project_id"] y luego dispara el evento
-    // casi simultáneamente — el delay garantiza que sessionStorage ya tiene
-    // el nuevo project_id cuando fetchERS lo lee.
     const handleRefresh = () => setTimeout(() => fetchERS(), 100);
 
-    fetchERS(); // carga inicial
-
+    fetchERS();
     window.addEventListener("ers-refresh", handleRefresh);
     window.addEventListener("chat-session-changed", handleRefresh);
-
-
 
     return () => {
       isMounted = false;
       window.removeEventListener("ers-refresh", handleRefresh);
       window.removeEventListener("chat-session-changed", handleRefresh);
-
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 
   useEffect(() => {
-  const handleOpenWidgets = () => setIsWidgetsOpen(true);
-  window.addEventListener("open-widgets-modal", handleOpenWidgets);
-  return () => {
-    window.removeEventListener("open-widgets-modal", handleOpenWidgets);
+    const handleOpenWidgets = () => setIsWidgetsOpen(true);
+    window.addEventListener("open-widgets-modal", handleOpenWidgets);
+    return () => window.removeEventListener("open-widgets-modal", handleOpenWidgets);
+  }, []);
+
+  const handleSendEmail = async () => {
+    const docId = getActiveProjectId();
+    const token = getToken();
+    const userName = [
+      localStorage.getItem("nombre"),
+      localStorage.getItem("apellidopaterno"),
+    ].filter(Boolean).join(" ");
+
+    if (!docId) {
+      setEmailPopup({ show: true, success: false, message: "No hay documento activo para enviar." });
+      return;
+    }
+    if (!token) {
+      setEmailPopup({ show: true, success: false, message: "No se encontró sesión activa. Por favor inicia sesión." });
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const response = await fetch(`${API_BASE}/email/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ doc_id: docId, user_name: userName }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.ok) {
+        setEmailPopup({ show: true, success: true, message: data.message ?? "El correo fue enviado correctamente a tu cuenta." });
+      } else {
+        setEmailPopup({ show: true, success: false, message: data.detail ?? "Ocurrió un error al enviar el correo." });
+      }
+    } catch {
+      setEmailPopup({ show: true, success: false, message: "No se pudo conectar con el servidor. Intenta de nuevo." });
+    } finally {
+      setSendingEmail(false);
+    }
   };
-}, []);
 
   const wrapperClass = expanded
     ? "flex-1 h-full min-w-[520px] transition-all duration-300"
@@ -246,6 +285,14 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
         <DownloadPopup docName={DOC_NAMES[tab]} onClose={() => setShowPopup(false)} />
       )}
 
+      {emailPopup.show && (
+        <EmailPopup
+          success={emailPopup.success}
+          message={emailPopup.message}
+          onClose={() => setEmailPopup({ show: false, success: false, message: "" })}
+        />
+      )}
+
       <section className={wrapperClass}>
         <div className="relative flex h-full flex-col rounded-3xl bg-gray-100 p-6 shadow-md">
           <button
@@ -255,7 +302,7 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
             {expanded ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
 
-          {/* ── Vista colapsada: miniaturas de los 3 documentos ── */}
+          {/* ── Vista colapsada ── */}
           {!expanded && (
             <div className="flex h-full flex-col gap-3">
               <div className="shrink-0">
@@ -269,7 +316,6 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
                     <span className="px-1 text-xs font-bold uppercase tracking-wider text-gray-500">
                       {DOC_NAMES[t]}
                     </span>
-
                     <div className="relative h-72 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md">
                       {t === "ERS" || t === "Análisis" ? (
                         <div
@@ -277,11 +323,8 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
                           style={{ transform: "scale(0.33)", transformOrigin: "top left", width: "303%", height: "303%" }}
                         >
                           {loadingERS ? (
-                            <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                              Cargando ERS...
-                            </div>
+                            <div className="flex h-full items-center justify-center text-sm text-gray-500">Cargando ERS...</div>
                           ) : (
-                            // Pasa changedFields para que DynamicVisor resalte los campos modificados
                             <WidgetRenderer widgets={widgets} changedFields={changedFields} />
                           )}
                         </div>
@@ -293,7 +336,6 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
                           style={{ pointerEvents: "none", width: "170%", height: "170%", transform: "scale(0.588)", transformOrigin: "top left" }}
                         />
                       )}
-
                       <button
                         onClick={() => { setTab(t); onToggle(); }}
                         className="group absolute inset-0 h-full w-full bg-transparent transition hover:bg-[#EB0029]/5"
@@ -310,7 +352,7 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
             </div>
           )}
 
-          {/* ── Vista expandida: documento completo con tabs ── */}
+          {/* ── Vista expandida ── */}
           {expanded && (
             <>
               <div className="relative mb-5 flex items-center justify-center">
@@ -330,23 +372,33 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
                   ))}
                 </div>
 
-                <button
-                  onClick={handleDownload}
-                  className="absolute right-0 flex cursor-pointer items-center gap-2 bg-transparent p-2 transition hover:scale-110"
-                  title="Descargar documento"
-                >
-                  <Download className="text-[#EB0029]" size={22} />
-                  <span className="font-medium text-[#EB0029]">Descargar</span>
-                </button>
+                <div className="absolute right-0 flex items-center gap-2">
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail}
+                    className="flex cursor-pointer items-center gap-2 bg-transparent p-2 transition hover:scale-110 disabled:cursor-not-allowed disabled:opacity-60"
+                    title="Enviar documento por correo"
+                  >
+                    {sendingEmail ? <Loader2 size={22} className="animate-spin text-[#EB0029]" /> : <Mail className="text-[#EB0029]" size={22} />}
+                    <span className="font-medium text-[#EB0029]">{sendingEmail ? "Enviando..." : "Enviar por correo"}</span>
+                  </button>
+
+                  <button
+                    onClick={handleDownload}
+                    className="flex cursor-pointer items-center gap-2 bg-transparent p-2 transition hover:scale-110"
+                    title="Descargar documento"
+                  >
+                    <Download className="text-[#EB0029]" size={22} />
+                    <span className="font-medium text-[#EB0029]">Descargar</span>
+                  </button>
+                </div>
               </div>
 
               <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-white shadow">
                 {tab === "ERS" || tab === "Análisis" ? (
                   <div className="h-full w-full overflow-y-auto overscroll-contain bg-[#e9e9e9]">
                     {loadingERS ? (
-                      <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                        Cargando documento...
-                      </div>
+                      <div className="flex h-full items-center justify-center text-sm text-gray-500">Cargando documento...</div>
                     ) : (
                       <WidgetRenderer widgets={widgets} changedFields={changedFields} />
                     )}
@@ -366,7 +418,6 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
         </div>
       </section>
 
-      {/* WidgetsModal recibe los widgets actuales para mostrar el doc en el modal */}
       <WidgetsModal
         isOpen={isWidgetsOpen}
         onClose={() => setIsWidgetsOpen(false)}
