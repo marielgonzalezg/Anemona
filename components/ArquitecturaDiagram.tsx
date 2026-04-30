@@ -358,16 +358,16 @@ export default function ArquitecturaDiagram() {
   const svgRef = useRef<SVGSVGElement>(null);
 
   const getIds = () => ({
-    projectId: typeof window !== "undefined" ? sessionStorage.getItem("project_id") ?? "" : "",
-    sessionId: typeof window !== "undefined" ? sessionStorage.getItem("chat_session_id") ?? "" : "",
-  });
+  doc_id: typeof window !== "undefined" ? sessionStorage.getItem("project_id") ?? "" : "",
+  sessionId: typeof window !== "undefined" ? sessionStorage.getItem("chat_session_id") ?? "" : "",
+});
 
   const fetchArquitectura = useCallback(async () => {
-  const { projectId } = getIds();
-  if (!projectId) { setLoading(false); return; }
+  const { doc_id } = getIds();
+  if (!doc_id) { setLoading(false); return; }
   try {
     const res = await fetch(
-      `https://api-anemona-637376850775.northamerica-northeast1.run.app/diagramaaqr/arquitectura?doc_id=${encodeURIComponent(projectId)}`,
+      `http://127.0.0.1:8000/diagramaaqr/arquitectura?doc_id=${encodeURIComponent(doc_id)}`,
       { cache: "no-store" }
     );
     if (!res.ok) throw new Error("Error al cargar arquitectura");
@@ -388,11 +388,17 @@ export default function ArquitecturaDiagram() {
   }
 }, []);
 
-  useEffect(() => {
-    fetchArquitectura();
-    pollRef.current = setInterval(fetchArquitectura, 5000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [fetchArquitectura]);
+  // Agrega este useEffect para la carga inicial
+useEffect(() => {
+  fetchArquitectura();
+}, [fetchArquitectura]);
+
+// Este se activa solo cuando generating === true
+useEffect(() => {
+  if (!generating) return;
+  const interval = setInterval(fetchArquitectura, 10000);
+  return () => clearInterval(interval);
+}, [generating, fetchArquitectura]);
 
   useEffect(() => {
     const handleRefresh = () => fetchArquitectura();
@@ -401,22 +407,28 @@ export default function ArquitecturaDiagram() {
 }, [fetchArquitectura]);
 
   const handleGenerar = async () => {
-  const { sessionId } = getIds();
-  if (!sessionId) return;
-  setGenerating(true); // ← spinner encendido
+  const { sessionId, doc_id } = getIds();
+  console.log("sessionId:", sessionId); 
+  console.log("doc_id:", doc_id);
+  
+  if (!sessionId || !doc_id) {
+    console.error("Faltan sessionId o doc_id en sessionStorage");
+    return;
+  }
+  
+  setGenerating(true);
   setError(null);
+  
   try {
     const res = await fetch(
-      `https://api-anemona-637376850775.northamerica-northeast1.run.app/diagramaaqr/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}`,
+      `http://127.0.0.1:8000/diagramaaqr/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}&doc_id=${encodeURIComponent(doc_id)}`,
       { method: "POST" }
     );
     if (!res.ok) throw new Error("Error al generar arquitectura");
-    // NO apagamos generating aquí — lo apaga el polling cuando detecta nodos
   } catch (e: any) {
     setError(e.message);
-    setGenerating(false); // solo apaga en error
+    setGenerating(false);
   }
-  // ← sin finally, el spinner se mantiene hasta que lleguen nodos
 };
 
   const handleDownload = () => {
