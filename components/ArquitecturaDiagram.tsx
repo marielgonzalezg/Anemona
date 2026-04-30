@@ -79,6 +79,7 @@ const TEXT_COLORS: Record<string, string> = {
   default:         "#334155",
 };
 
+
 function getColor(tipo?: string, map = COLORS) {
   if (!tipo) return map.default;
   const key = tipo.toLowerCase().replace(/\s+/g, "_");
@@ -182,6 +183,7 @@ interface ArquitecturaSVGProps extends ArquitecturaData {
 
 function ArquitecturaSVG({ nodes, edges, svgRef }: ArquitecturaSVGProps) {
   const laid = layoutNodes(nodes);
+  
   const nodeMap = Object.fromEntries(laid.map((n) => [n.id, n]));
   const maxY = Math.max(...laid.map((n) => (n.y ?? 0) + NODE_H)) + 40;
 
@@ -357,32 +359,34 @@ export default function ArquitecturaDiagram() {
 
   const getIds = () => ({
     projectId: typeof window !== "undefined" ? sessionStorage.getItem("project_id") ?? "" : "",
-    sessionId: typeof window !== "undefined" ? sessionStorage.getItem("session_id") ?? "" : "",
+    sessionId: typeof window !== "undefined" ? sessionStorage.getItem("chat_session_id") ?? "" : "",
   });
 
   const fetchArquitectura = useCallback(async () => {
-    const { projectId } = getIds();
-    if (!projectId) { setLoading(false); return; }
-    try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/firestore/arquitectura?doc_id=${encodeURIComponent(projectId)}`,
-        { cache: "no-store" }
-      );
-      if (!res.ok) throw new Error("Error al cargar arquitectura");
-      const json = await res.json();
-      if (json.ok) {
-        setData({
-          nodes: (json.nodes ?? []).map((n: any) => ({ id: n.id, label: n.label, tipo: n.type })),
-          edges: (json.edges ?? []).map((e: any) => ({ source: e.from, target: e.to, label: e.label })),
-        });
-        setError(null);
-      }
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
+  const { projectId } = getIds();
+  if (!projectId) { setLoading(false); return; }
+  try {
+    const res = await fetch(
+      `http://127.0.0.1:8000/firestore/arquitectura?doc_id=${encodeURIComponent(projectId)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) throw new Error("Error al cargar arquitectura");
+    const json = await res.json();
+    if (json.ok) {
+      setData({
+        nodes: (json.nodes ?? []).map((n: any) => ({ id: n.id, label: n.label, tipo: n.type })),
+        edges: (json.edges ?? []).map((e: any) => ({ source: e.from, target: e.to, label: e.label })),
+      });
+      setError(null);
+      if ((json.nodes ?? []).length > 0) setGenerating(false);
     }
-  }, []);
+  } catch (e: any) {
+    setError(e.message);
+    setGenerating(false);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     fetchArquitectura();
@@ -390,23 +394,30 @@ export default function ArquitecturaDiagram() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchArquitectura]);
 
+  useEffect(() => {
+    const handleRefresh = () => fetchArquitectura();
+    window.addEventListener("ers-refresh", handleRefresh);
+    return () => window.removeEventListener("ers-refresh", handleRefresh);
+}, [fetchArquitectura]);
+
   const handleGenerar = async () => {
-    const { sessionId } = getIds();
-    if (!sessionId) return;
-    setGenerating(true);
-    setError(null);
-    try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/firestore/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}`,
-        { method: "POST" }
-      );
-      if (!res.ok) throw new Error("Error al generar arquitectura");
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setGenerating(false);
-    }
-  };
+  const { sessionId } = getIds();
+  if (!sessionId) return;
+  setGenerating(true); // ← spinner encendido
+  setError(null);
+  try {
+    const res = await fetch(
+      `http://127.0.0.1:8000/firestore/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}`,
+      { method: "POST" }
+    );
+    if (!res.ok) throw new Error("Error al generar arquitectura");
+    // NO apagamos generating aquí — lo apaga el polling cuando detecta nodos
+  } catch (e: any) {
+    setError(e.message);
+    setGenerating(false); // solo apaga en error
+  }
+  // ← sin finally, el spinner se mantiene hasta que lleguen nodos
+};
 
   const handleDownload = () => {
     if (!svgRef.current) return;
