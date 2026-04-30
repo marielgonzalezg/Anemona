@@ -142,7 +142,7 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
         if (!docId) return;
 
         const response = await fetch(
-          `http://127.0.0.1:8000/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
+          `https://api-anemona-637376850775.northamerica-northeast1.run.app/firestore/bajar?doc_id=${encodeURIComponent(docId)}`,
           {
             method: "GET",
             headers: { accept: "application/json" },

@@ -61,7 +61,7 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
     setLoading(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/widgets/modificar/${encodeURIComponent(docId)}`,
+        `https://api-anemona-637376850775.northamerica-northeast1.run.app/widgets/modificar?doc_id=${encodeURIComponent(docId)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

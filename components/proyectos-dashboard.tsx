@@ -67,7 +67,7 @@ export default function ProyectosDashboard() {
       setAiMessage("");
 
       const res = await fetch(
-        `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos/buscar-con-agente-local`,
+        `https://api-anemona-637376850775.northamerica-northeast1.run.app/usuarios/${idusuario}/proyectos/buscar-con-agente-local`,
         {
           method: "POST",
           headers: {
@@ -137,7 +137,7 @@ export default function ProyectosDashboard() {
     try {
       setEliminando(true);
 
-      const res = await fetch(`http://127.0.0.1:8000/proyectos/${folioAEliminar}`, {
+      const res = await fetch(`https://api-anemona-637376850775.northamerica-northeast1.run.app/proyectos/${folioAEliminar}`, {
         method: "DELETE",
       });
 
@@ -177,7 +177,7 @@ export default function ProyectosDashboard() {
     const fetchProyectos = async () => {
       try {
         const res = await fetch(
-          `http://127.0.0.1:8000/usuarios/${idusuario}/proyectos`
+          `https://api-anemona-637376850775.northamerica-northeast1.run.app/usuarios/${idusuario}/proyectos`
         );
 
         const data = await res.json();

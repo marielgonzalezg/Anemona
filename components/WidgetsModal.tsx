@@ -116,7 +116,7 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
       console.log(JSON.stringify(payload, null, 2)); // <- usa payload
 
       const res = await fetch(
-        `http://127.0.0.1:8000/widgets/modificar/${encodeURIComponent(docId)}`,
+        `https://api-anemona-637376850775.northamerica-northeast1.run.app/widgets/modificar/${encodeURIComponent(docId)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
