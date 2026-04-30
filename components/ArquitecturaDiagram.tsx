@@ -367,7 +367,7 @@ export default function ArquitecturaDiagram() {
   if (!projectId) { setLoading(false); return; }
   try {
     const res = await fetch(
-      `http://127.0.0.1:8000/firestore/arquitectura?doc_id=${encodeURIComponent(projectId)}`,
+      `https://api-anemona-637376850775.northamerica-northeast1.run.app/diagramaaqr/arquitectura?doc_id=${encodeURIComponent(projectId)}`,
       { cache: "no-store" }
     );
     if (!res.ok) throw new Error("Error al cargar arquitectura");
@@ -407,7 +407,7 @@ export default function ArquitecturaDiagram() {
   setError(null);
   try {
     const res = await fetch(
-      `http://127.0.0.1:8000/firestore/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}`,
+      `https://api-anemona-637376850775.northamerica-northeast1.run.app/diagramaaqr/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}`,
       { method: "POST" }
     );
     if (!res.ok) throw new Error("Error al generar arquitectura");
