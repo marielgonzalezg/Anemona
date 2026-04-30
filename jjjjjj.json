@@ -1,85 +1,98 @@
-
-
-
-{
-  "posicion": 1,
-  "id_widget": "w_001",
-  "titulo": "Descripción general de la iniciativa",
-  "objetivo_widget": "Este widget documenta la visión general del proyecto en el SRS. INSTRUCCIONES PARA EL AGENTE: (1) OBLIGATORIO — revisa el valor actual de 'descripcion' dentro de 'campos'. Si está vacío, null o no existe, DEBES generarla obligatoriamente con base en la información del proyecto: incluye el problema que se desea resolver, el contexto actual del área o proceso afectado, y la justificación de por qué este proyecto es necesario. Si 'descripcion' ya tiene contenido, NO la modifiques a menos que el usuario lo solicite explícitamente. (2) OPCIONAL — solo modifica 'titulo' o 'subtitulo' dentro de 'campos' si el usuario lo solicita explícitamente. Si no los menciona, no los incluyas en 'campos' y se usarán los valores por defecto: título='Descripción general de la iniciativa y justificación', subtítulo='Descripción general de la iniciativa'.",
-  "descripcion_campos": {
-    "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-    "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-    "subtitulo": "OPCIONAL. Sobrescribe el subtítulo de la sección. Valor por defecto: 'Descripción general de la iniciativa'."
+[
+  {
+    "posicion": 0,
+    "id_widget": "w_000",
+    "titulo": "Datos generales de la iniciativa",
+    "objetivo_widget": "Capturar la información general y administrativa de la iniciativa.",
+    "descripcion_campos": {
+      "SOLICITANTE": "Solicitante",
+      "INFO_CONTACTO": "Información de contacto",
+      "DGA": "Dirección General Adjunta",
+      "PATROCINADOR": "Patrocinador",
+      "CR": "Centro de Responsabilidad",
+      "SOCIO": "Nombre del Socio de Negocio",
+      "NOMBRE_INICIATIVA": "Nombre de la iniciativa",
+      "TIPO_INICIATIVA": "Tipo de la iniciativa",
+    },
+    "campos": {
+      "SOLICITANTE": null,
+      "INFO_CONTACTO": null,
+      "DGA": null,
+      "PATROCINADOR": null,
+      "CR": null,
+      "SOCIO": null,
+      "NOMBRE_INICIATIVA": null,
+      "TIPO_INICIATIVA": null,
+    }
   },
-  "campos": {
-    "descripcion": "TEXTO AZUL",
-    "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-    "subtitulo": "OPCIONAL. Sobrescribe el subtítulo de la sección. Valor por defecto: 'Descripción general de la iniciativa'."
-  }
-}
-
-{
+  {
+    "posicion": 1,
+    "id_widget": "w_001",
+    "titulo": "Descripción de la iniciativa",
+    "objetivo_widget": "Describir de manera general la iniciativa, su propósito y contexto.",
+    "descripcion_campos": {
+      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+      "subtitulo": "OPCIONAL. Sobrescribe el subtítulo de la sección. Valor por defecto: 'Descripción general de la iniciativa'."
+    },
+    "campos": {
+      "descripcion": null,
+      "titulo": "1. Descripción general de la iniciativa y justificación.",
+      "subtitulo": "Descripción General de la Iniciativa"
+    }
+  },
   {
     "posicion": 2,
     "id_widget": "w_002",
     "titulo": "Objetivos y alcance",
-    "objetivo_widget":
-      "Definir el objetivo principal y el alcance de la iniciativa.",
-  }
-    descripcion_campos: {
-
-        },
-
-    campos: {
-    "Titulo": "Objetivos de la iniciativa. ",
-    "Seccion_1": "NULL",
-    "Seccion_1Titulo": "Objetivo",
-    "Seccion_2": "NULL",    
-    "Seccion_2Titulo": "Alcance",
-    },
-  }
-
-
-  {
-    //// DONE
-    id_widget: "w_003",
-    posicion: 10,
-    titulo: "Riesgos",
-    objetivo_widget: "Identificar y documentar los riesgos asociados a la iniciativa.",
-    descripcion_campos: {
-      filas: "Listado de riesgos",
-      TIPO: "Tipo de riesgo",
-      PROBABLE_PERDIDA: "Probable pérdida",
-      JUSTIFICACION: "Justificación",
-    },
-    campos: {
-      filas: [
-        { TIPO: "N/A",      PROBABLE_PERDIDA: "N/A", JUSTIFICACION: "N/A" }
-      ],
-    },
-  },
-
-
-   {
-    //// DONE
-    id_widget: "w_011",
-    posicion: 10,
-    titulo: "Riesgos",
-    objetivo_widget: "Identificar y documentar los riesgos asociados a la iniciativa.",
-    descripcion_campos: {
-      filas: "Listado de riesgos",
-      TIPO: "Tipo de riesgo",
-      PROBABLE_PERDIDA: "Probable pérdida",
-      JUSTIFICACION: "Justificación",
-    },
-    campos: {
-      filas: 
-      [
-    { 
-        TIPO: "N/A",      
-        PROBABLE_PERDIDA: "N/A", 
-        JUSTIFICACION: "N/A" 
+    "objetivo_widget": "Definir el objetivo principal y el alcance de la iniciativa.",
+    "descripcion_campos": {},
+    "campos": {
+      "Titulo": "Objetivos de la iniciativa.",
+      "Seccion_1": null,
+      "Seccion_1Titulo": "Objetivo",
+      "Seccion_2": null,
+      "Seccion_2Titulo": "Alcance"
     }
-      ],
-    },
   },
+  {
+    "posicion": 3,
+    "id_widget": "w_003",
+    "titulo": "Áreas impactadas",
+    "objetivo_widget": "Identificar las áreas de la organización que serán impactadas.",
+    "descripcion_campos": {
+      "filas": "Listado de áreas de negocio, procesos impactados y descripción del impacto",
+      "AREA_NEGOCIO": "El área del negocio",
+      "IMPACTOS": "El tipo de proceso y cómo impacta al área"
+    },
+    "campos": {
+      "filas": [
+        {
+          "AREA_NEGOCIO": "Área de negocio",
+          "IMPACTOS": "Proceso o actividad impactada"
+        }
+      ]
+    }
+  },
+  {
+    "posicion": 4,
+    "id_widget": "w_003",
+    "titulo": "Riesgos",
+    "objetivo_widget": "Identificar y documentar los riesgos asociados a la iniciativa.",
+    "descripcion_campos": {
+      "filas": "Listado de riesgos",
+      "TIPO": "Tipo de riesgo",
+      "PROBABLE_PERDIDA": "Probable pérdida",
+      "JUSTIFICACION": "Justificación"
+    },
+    "campos": {
+      "filas": [
+        {
+          "TIPO": "N/A",
+          "PROBABLE_PERDIDA": "N/A",
+          "JUSTIFICACION": "N/A"
+        }
+      ]
+    }
+  }
+]

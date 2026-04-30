@@ -15,6 +15,7 @@ type WidgetsModalProps = {
   isOpen: boolean;
   onClose: () => void;
   widgets: Widget[];
+  onWidgetsChange?: (widgets: Widget[]) => void;
 };
 
 function renderWidgetNode(
@@ -30,7 +31,7 @@ function renderWidgetNode(
   }
 }
 
-export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalProps) {
+export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange }: WidgetsModalProps) {
   type DocWidget = Widget & { _isNew?: boolean };
   const [docWidgets, setDocWidgets] = useState<DocWidget[]>(widgets);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
@@ -45,17 +46,23 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
   const [reorderDropIndex, setReorderDropIndex] = useState<number | null>(null);
 
   useEffect(() => {
-  setDocWidgets(widgets);
-}, [widgets]);
-
-  function handleChange(posicion: number, key: string, value: string) {
-    setDocWidgets((prev) =>
-      prev.map((w) => {
-        if (w.posicion !== posicion) return w;
-        return { ...w, campos: { ...w.campos, [key]: value } };
-      })
-    );
+  if (isOpen) {
+    setDocWidgets(widgets);
   }
+}, [isOpen]);
+
+  function handleChange(index: number, key: string, value: any) {
+  setDocWidgets((prev) => {
+    const updated = prev.map((w, i) => {
+      if (i !== index) return w;
+      return { ...w, campos: { ...w.campos, [key]: value } };
+    });
+    setTimeout(() => {
+      onWidgetsChange?.(updated.map(({ _isNew, ...w }) => w));
+    }, 0);
+    return updated;
+  });
+}
 
   // Inserta widget del panel derecho en posición exacta
   function handleDrop(insertAtIndex: number) {
@@ -254,9 +261,10 @@ export default function WidgetsModal({ isOpen, onClose, widgets }: WidgetsModalP
                             <div className="absolute top-2 right-3 text-gray-300 text-sm select-none">⠿</div>
 
                             <div className="pt-5 px-2 pb-2">
-                              {renderWidgetNode(widget, handleChange)}
+                              {renderWidgetNode(widget, (posicion, key, value) => handleChange(i, key, value))}
                             </div>
-                          </div>
+
+                            </div> 
 
                           {/* Drop zone para nuevo widget (desde panel derecho) */}
                           <DropZone
