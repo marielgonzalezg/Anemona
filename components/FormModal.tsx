@@ -73,7 +73,7 @@ export default function FormModal({
       try {
         setLoadingDepartamentos(true);
 
-        const res = await fetch("http://127.0.0.1:8000/departamentos");
+        const res = await fetch("https://api-anemona-637376850775.northamerica-northeast1.run.app/departamentos");
 
         if (!res.ok) {
           throw new Error("No se pudieron cargar los departamentos");
@@ -210,6 +210,7 @@ export default function FormModal({
         PROCESO_IMPACTO: null,
       }));
 
+
       const payload = {
         formulario: {
           solicitante: formData.solicitante || null,
@@ -224,85 +225,257 @@ export default function FormModal({
           usuario_nombre: null,
           usuario_id: tempUserId || localStorage.getItem("idusuario") || null,
         },
-        plantilla: {
-          DATOS_GENERALES: {
-            SOLICITANTE: null,
-            INFO_CONTACTO: null,
-            DGA: null,
-            PATROCINADOR: null,
-            CR: null,
-            SOCIO: null,
-            NOMBRE_INICIATIVA: null,
-            TIPO_INICIATIVA: null,
-          },
-          DESCRIPCION_INICIATIVA: null,
-          OBJETIVOS_ALCANCE: {
-            OBJETIVO: null,
-            ALCANCE: null,
-          },
-          AREAS_IMPACTADAS: areasImpactadasConNombre,
-          TABLA_FR: {
-            AREA_PARTICIPANTE: null,
-            RESPONSABLE: null,
-          },
-          REQUERIMIENTO_REGULATORIO: {
-            AUTORIDAD: null,
-            FECHA_EMISION: null,
-            FECHA_RECEPCION: null,
-            FECHA_ENTRADA_VIGOR: null,
-            MONTO_SANCION: null,
-            SISTEMAS_APLICATIVOS: [],
-          },
-          REQUERIMIENTO_NO_REGULATORIO: {
-            ES_URGENTE: null,
-            FECHA_LIMITE: null,
-          },
-          REQUERIMIENTO_PERIODICO: {
-            PERIODICIDAD: null,
-            FECHAS_ENTREGA: [],
-          },
-          BENEFICIOS: {
-            OTROS_BENEFICIOS: null,
-          },
-          PARTICIPACION_OTRAS_AREAS: null,
-          RIESGOS: [
-            {
-              TIPO: "Credito",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Liquidez",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Mercado",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Operativo",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-            {
-              TIPO: "Reputacional",
-              PROBABLE_PERDIDA: null,
-              JUSTIFICACION: null,
-            },
-          ],
-          EXCLUSIONES: null,
-          SUPUESTOS: null,
-          RESTRICCIONES: null,
-          ANEXOS: [],
-        },
-      };
+        plantilla: [{
+    posicion: 0,
+    id_widget: "w_000",
+    titulo: "Datos generales de la iniciativa",
+    objetivo_widget: "Capturar la información general y administrativa de la iniciativa.",
+    descripcion_campos: {
+      SOLICITANTE: "Solicitante",
+      INFO_CONTACTO: "Información de contacto",
+      DGA: "Dirección General Adjunta",
+      PATROCINADOR: "Patrocinador",
+      CR: "Centro de Responsabilidad",
+      SOCIO: "Nombre del Socio de Negocio",
+      NOMBRE_INICIATIVA: "Nombre de la iniciativa",
+      TIPO_INICIATIVA: "Tipo de la iniciativa",
+    },
+    campos: {
+      SOLICITANTE: null,
+      INFO_CONTACTO: null,
+      DGA: null,
+      PATROCINADOR: null,
+      CR: null,
+      SOCIO: null,
+      NOMBRE_INICIATIVA: null,
+      TIPO_INICIATIVA: null,
+    },
+  },
+  {
+    //// DONE
+    posicion: 1,
+    id_widget: "w_001",
+    titulo: "Descripción de la iniciativa",
+    objetivo_widget: "Describir de manera general la iniciativa, su propósito y contexto.",
+    descripcion_campos: {
+      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+      "subtitulo": "OPCIONAL. Sobrescribe el subtítulo de la sección. Valor por defecto: 'Descripción general de la iniciativa'."
+    },
+    campos: {
+      "descripcion": "NULL",
+      "titulo":"1.	Descripción general de la iniciativa y justificación.",
+      "subtitulo":"Descripción General de la Iniciativa  "
+    },
+  },
+  {
+    //// DONE
+    posicion: 2,
+    id_widget: "w_002",
+    titulo: "Objetivos y alcance",
+    objetivo_widget:
+      "Definir el objetivo principal y el alcance de la iniciativa.",
+    
+    descripcion_campos: {
+    },
+    campos: {
+      Titulo: "Objetivos de la iniciativa. ",
+      Seccion_1: "NULL",
+      Seccion_1Titulo: "Objetivo",
+      Seccion_2: "NULL",    
+      Seccion_2Titulo: "Alcance",
+    },
+  },
+   {
+    //// DONE pero no pq dario puso tirulos automaticos
+    id_widget: "w_030",
+    posicion: 3,
+    titulo: "Areas impactadas",
+    objetivo_widget: "Identificar las áreas de la organización que serán impactadas.",
+    descripcion_campos: {
+      filas: "Listado de areas de negocio, que procesos la impactan y la descripcion del impacto",
+      AREA_NEGOCIO: "El area del negocio",
+      IMPACTOS: "el tipo de proceso y como impactan al area",
+      omg: "esta file no existe y debería ser dinamico para haceptar cualquier numero de filas",
+    },
+    campos: {
+      filas: 
+      [
+        { AREA_NEGOCIO: "Área de negocio", IMPACTOS: "Proceso o actividad impactada", omg: "omg" },
+      ],
+    },
+  },
+   {
+    //// POR HACER
+    id_widget: "w_021",
+    posicion: 4,
+    titulo: "Tabla FR",
+    objetivo_widget: "Asignar responsables y áreas participantes en la iniciativa.",
+    descripcion_campos: {
+      AREA_PARTICIPANTE: "Área participante",
+      RESPONSABLE: "Responsable",
+    },
+    campos: {
+      AREA_PARTICIPANTE: null,
+      RESPONSABLE: null,
+    },
+  },
+  {
+    //// POR HACER
+    id_widget: "w_020", 
+    posicion: 5,
+    titulo: "Requerimiento regulatorio",
+    objetivo_widget: "Registrar información relacionada con requerimientos regulatorios aplicables.",
+    descripcion_campos: {
+      AUTORIDAD: "Autoridad",
+      FECHA_EMISION: "Fecha de emisión",
+      FECHA_RECEPCION: "Fecha de recepción",
+      FECHA_ENTRADA_VIGOR: "Fecha de entrada en vigor",
+      MONTO_SANCION: "Monto de sanción",
+      SISTEMAS_APLICATIVOS: "Sistemas aplicativos",
+    },
+    campos: {
+      AUTORIDAD: null,
+      FECHA_EMISION: null,
+      FECHA_RECEPCION: null,
+      FECHA_ENTRADA_VIGOR: null,
+      MONTO_SANCION: null,
+      SISTEMAS_APLICATIVOS: [],
+    },
+  },
+   {
+    //// POR HACER
+    id_widget: "w_034",
+    posicion: 6,
+    titulo: "Requerimiento no regulatorio",
+    objetivo_widget: "Capturar requerimientos internos o no regulados.",
+    descripcion_campos: {
+      ES_URGENTE: "Es urgente",
+      FECHA_LIMITE: "Fecha límite",
+    },
+    campos: {
+      ES_URGENTE: null,
+      FECHA_LIMITE: null,
+    },
+  },
+  {
+    //// POR HACER
+    id_widget: "w_008",
+    posicion: 7,
+    titulo: "Requerimiento periódico",
+    objetivo_widget: "Definir periodicidad y fechas de entrega de requerimientos recurrentes.",
+    descripcion_campos: {
+      PERIODICIDAD: "Periodicidad",
+      FECHAS_ENTREGA: "Fechas de entrega",
+    },
+    campos: {
+      PERIODICIDAD: null,
+      FECHAS_ENTREGA: [],
+    },
+  },
+  {
+    //// POR HACER
+    id_widget: "w_009",
+    posicion: 8,
+    titulo: "Beneficios",
+    objetivo_widget: "Identificar beneficios adicionales derivados de la iniciativa.",
+    descripcion_campos: {
+      OTROS_BENEFICIOS: "Otros beneficios",
+    },
+    campos: {
+      OTROS_BENEFICIOS: null,
+    },
+  },
+   {
+    //// POR HACER
+    id_widget: "w_010",
+    posicion: 9,
+    titulo: "Participación de otras áreas",
+    objetivo_widget: "Registrar la participación de otras áreas en la iniciativa.",
+    descripcion_campos: {
+      PARTICIPACION_OTRAS_AREAS: "Participación de otras áreas",
+    },
+    campos: {
+      PARTICIPACION_OTRAS_AREAS: null,
+    },
+  },
+  {
+    //// DONE
+    id_widget: "w_003",
+    posicion: 10,
+    titulo: "Riesgos",
+    objetivo_widget: "Identificar y documentar los riesgos asociados a la iniciativa.",
+    descripcion_campos: {
+      filas: "Listado de riesgos",
+      TIPO: "Tipo de riesgo",
+      PROBABLE_PERDIDA: "Probable pérdida",
+      JUSTIFICACION: "Justificación",
+    },
+    campos: {
+      filas: [
+        { TIPO: "N/A",      PROBABLE_PERDIDA: "N/A", JUSTIFICACION: "N/A" },
+      ],
+    },
+  },
+  {
+    //// POR HACER
+    id_widget: "w_012",
+    posicion: 11,
+    titulo: "Exclusiones",
+    objetivo_widget: "Definir los elementos fuera del alcance de la iniciativa.",
+    descripcion_campos: {
+      EXCLUSIONES: "Exclusiones",
+    },
+    campos: {
+      EXCLUSIONES: null,
+    },
+  },
+   {
+    //// POR HACER
+    id_widget: "w_013",
+    posicion: 12,
+    titulo: "Supuestos",
+    objetivo_widget: "Registrar los supuestos considerados para la iniciativa.",
+    descripcion_campos: {
+      SUPUESTOS: "Supuestos",
+    },
+    campos: {
+      SUPUESTOS: null,
+    },
+  },
+  {
+    //// POR HACER
+    id_widget: "w_014",
+    posicion: 13,
+    titulo: "Restricciones",
+    objetivo_widget: "Documentar las restricciones que afectan la iniciativa.",
+    descripcion_campos: {
+      RESTRICCIONES: "Restricciones",
+    },
+    campos: {
+      RESTRICCIONES: null,
+    },
+  },
+  {
+    //// POR HACER
+    id_widget:"w_015",
+    posicion: 14,
+    titulo: "Anexos",
+    objetivo_widget: "Adjuntar documentación adicional relevante a la iniciativa.",
+    descripcion_campos: {
+      ANEXOS: "Anexos",
+    },
+    campos: {
+      ANEXOS: [],
+    },
+  },
+]
+      }
 
       console.log("📦 PAYLOAD QUE SE ENVÍA:");
       console.log(JSON.stringify(payload, null, 2));
 
-      const res = await fetch("http://127.0.0.1:8000/firestore/new_project", {
+      const res = await fetch("https://api-anemona-637376850775.northamerica-northeast1.run.app/firestore/new_project", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
