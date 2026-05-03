@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { RefreshCw, Loader2, Download } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { RefreshCw, Loader2, Download, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 
 interface Nodo {
   id: string;
@@ -22,427 +22,459 @@ interface ArquitecturaData {
   edges: Arista[];
 }
 
-const COLORS: Record<string, string> = {
-  frontend:        "#DBEAFE",
-  backend:         "#EDE9FE",
-  database:        "#FEF3C7",
-  api:             "#D1FAE5",
-  service:         "#FCE7F3",
-  core_system:     "#E0F2FE",
-  workflow_service:"#F0FDF4",
-  business_module: "#FFF7ED",
-  document_service:"#F5F3FF",
-  ai_service:      "#FDF4FF",
-  rules_engine:    "#ECFDF5",
-  security_integration: "#FEF2F2",
-  integration_hub: "#EFF6FF",
-  external_system: "#F8FAFC",
-  internal_system: "#F1F5F9",
-  default:         "#F8FAFC",
+// ── Color palette ──────────────────────────────────────────────
+const PALETTE: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+  frontend:             { bg: "#EFF6FF", border: "#3B82F6", text: "#1D4ED8", badge: "#DBEAFE" },
+  backend:              { bg: "#F5F3FF", border: "#7C3AED", text: "#5B21B6", badge: "#EDE9FE" },
+  database:             { bg: "#FFFBEB", border: "#D97706", text: "#92400E", badge: "#FEF3C7" },
+  api:                  { bg: "#ECFDF5", border: "#059669", text: "#065F46", badge: "#D1FAE5" },
+  service:              { bg: "#FFF1F2", border: "#E11D48", text: "#9F1239", badge: "#FFE4E6" },
+  core_system:          { bg: "#F0F9FF", border: "#0284C7", text: "#0C4A6E", badge: "#E0F2FE" },
+  workflow_service:     { bg: "#F0FDF4", border: "#16A34A", text: "#14532D", badge: "#DCFCE7" },
+  business_module:      { bg: "#FFF7ED", border: "#EA580C", text: "#7C2D12", badge: "#FFEDD5" },
+  document_service:     { bg: "#FAF5FF", border: "#9333EA", text: "#3B0764", badge: "#F3E8FF" },
+  document_store:       { bg: "#FAF5FF", border: "#9333EA", text: "#3B0764", badge: "#F3E8FF" },
+  ai_service:           { bg: "#FDF4FF", border: "#C026D3", text: "#701A75", badge: "#FAE8FF" },
+  rules_engine:         { bg: "#F0FDF4", border: "#059669", text: "#064E3B", badge: "#DCFCE7" },
+  security_integration: { bg: "#FFF1F2", border: "#DC2626", text: "#7F1D1D", badge: "#FEE2E2" },
+  integration_hub:      { bg: "#EFF6FF", border: "#2563EB", text: "#1E3A5F", badge: "#DBEAFE" },
+  external_system:      { bg: "#F8FAFC", border: "#64748B", text: "#334155", badge: "#F1F5F9" },
+  internal_system:      { bg: "#F1F5F9", border: "#94A3B8", text: "#334155", badge: "#E2E8F0" },
+  channel:              { bg: "#F8FAFC", border: "#94A3B8", text: "#334155", badge: "#E2E8F0" },
+  default:              { bg: "#F8FAFC", border: "#CBD5E1", text: "#334155", badge: "#E2E8F0" },
 };
 
-const BORDER_COLORS: Record<string, string> = {
-  frontend:        "#93C5FD",
-  backend:         "#C4B5FD",
-  database:        "#FCD34D",
-  api:             "#6EE7B7",
-  service:         "#F9A8D4",
-  core_system:     "#7DD3FC",
-  workflow_service:"#86EFAC",
-  business_module: "#FCA5A5",
-  document_service:"#DDD6FE",
-  ai_service:      "#E879F9",
-  rules_engine:    "#34D399",
-  security_integration: "#FCA5A5",
-  integration_hub: "#93C5FD",
-  external_system: "#94A3B8",
-  internal_system: "#CBD5E1",
-  default:         "#CBD5E1",
-};
-
-const TEXT_COLORS: Record<string, string> = {
-  frontend:        "#1E40AF",
-  backend:         "#4C1D95",
-  database:        "#78350F",
-  api:             "#064E3B",
-  service:         "#831843",
-  core_system:     "#0C4A6E",
-  workflow_service:"#14532D",
-  business_module: "#7C2D12",
-  document_service:"#3B0764",
-  ai_service:      "#581C87",
-  rules_engine:    "#064E3B",
-  security_integration: "#7F1D1D",
-  integration_hub: "#1E3A5F",
-  external_system: "#334155",
-  internal_system: "#334155",
-  default:         "#334155",
-};
-
-
-function getColor(tipo?: string, map = COLORS) {
-  if (!tipo) return map.default;
-  const key = tipo.toLowerCase().replace(/\s+/g, "_");
-  return map[key] ?? map.default;
+function getPalette(tipo?: string) {
+  if (!tipo) return PALETTE.default;
+  const key = tipo.toLowerCase().replace(/[\s-]+/g, "_");
+  return PALETTE[key] ?? PALETTE.default;
 }
 
-// Nodos más anchos y altos para que el texto quepa sin truncar
-const NODE_W = 170;
-const NODE_H = 64;
-const GAP_X = 24;
-const GAP_Y = 100;
-const MAX_PER_ROW = 4;
-const CANVAS_W = MAX_PER_ROW * NODE_W + (MAX_PER_ROW - 1) * GAP_X + 40; // 740
+// ── Layout ─────────────────────────────────────────────────────
+const NODE_W = 180;
+const NODE_H = 72;
+const COL_GAP = 48;
+const ROW_GAP = 90;
+const COLS = 4;
+const PAD = 40;
 
 function layoutNodes(nodes: Nodo[]): Nodo[] {
-  const layerOrder = ["frontend", "api", "backend", "service", "database"];
-  const layers: Record<string, Nodo[]> = {};
-  layerOrder.forEach((k) => (layers[k] = []));
-  const unknownNodes: Nodo[] = [];
+  const LAYER_ORDER = [
+    "frontend", "channel", "api",
+    "core_system", "backend", "integration_hub",
+    "ai_service", "workflow_service", "service",
+    "rules_engine", "business_module", "document_service", "document_store",
+    "security_integration", "database",
+    "external_system", "internal_system",
+  ];
+
+  const buckets: Record<string, Nodo[]> = {};
+  const others: Nodo[] = [];
 
   nodes.forEach((n) => {
-    const key = n.tipo?.toLowerCase().replace(/\s+/g, "_") ?? "";
-    if (layerOrder.includes(key)) layers[key].push(n);
-    else unknownNodes.push(n);
+    const key = n.tipo?.toLowerCase().replace(/[\s-]+/g, "_") ?? "";
+    if (LAYER_ORDER.includes(key)) {
+      buckets[key] = buckets[key] ?? [];
+      buckets[key].push(n);
+    } else {
+      others.push(n);
+    }
   });
 
-  const result: Nodo[] = [];
-  let currentRow = 0;
+  const ordered: Nodo[] = [];
+  LAYER_ORDER.forEach((k) => { if (buckets[k]) ordered.push(...buckets[k]); });
+  ordered.push(...others);
 
-  const placeLayer = (layer: Nodo[]) => {
-    if (layer.length === 0) return;
-    for (let i = 0; i < layer.length; i += MAX_PER_ROW) {
-      const rowNodes = layer.slice(i, i + MAX_PER_ROW);
-      const totalW = rowNodes.length * NODE_W + (rowNodes.length - 1) * GAP_X;
-      const startX = (CANVAS_W - totalW) / 2;
-      rowNodes.forEach((node, colIndex) => {
-        result.push({
-          ...node,
-          x: startX + colIndex * (NODE_W + GAP_X),
-          y: 30 + currentRow * (NODE_H + GAP_Y),
-        });
-      });
-      currentRow++;
-    }
-  };
-
-  layerOrder.forEach((k) => placeLayer(layers[k]));
-  placeLayer(unknownNodes);
-
-  return result;
+  return ordered.map((n, i) => {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    return {
+      ...n,
+      x: PAD + col * (NODE_W + COL_GAP),
+      y: PAD + row * (NODE_H + ROW_GAP),
+    };
+  });
 }
 
-// Trunca en múltiples líneas si el label es largo
-function splitLabel(label: string, maxChars = 20): [string, string] {
-  if (label.length <= maxChars) return [label, ""];
-  const mid = label.lastIndexOf(" ", maxChars);
-  if (mid < 6) return [label.slice(0, maxChars - 1) + "…", ""];
-  return [label.slice(0, mid), label.slice(mid + 1).length > maxChars ? label.slice(mid + 1, mid + maxChars) + "…" : label.slice(mid + 1)];
+function canvasSize(nodes: Nodo[]) {
+  const maxX = Math.max(...nodes.map((n) => (n.x ?? 0) + NODE_W)) + PAD;
+  const maxY = Math.max(...nodes.map((n) => (n.y ?? 0) + NODE_H)) + PAD;
+  return { w: maxX, h: maxY };
 }
 
-function buildPath(
-  src: Nodo, tgt: Nodo, i: number
-): { d: string; mx: number; my: number } {
+// ── Edge routing ───────────────────────────────────────────────
+function edgePath(src: Nodo, tgt: Nodo): string {
   const x1 = (src.x ?? 0) + NODE_W / 2;
   const y1 = (src.y ?? 0) + NODE_H;
   const x2 = (tgt.x ?? 0) + NODE_W / 2;
-  const y2 = (tgt.y ?? 0);
+  const y2 = tgt.y ?? 0;
 
-  // Lane offset: separa líneas paralelas desplazando el segmento horizontal
-  const laneOffset = ((i % 9) - 4) * 12;
-
-  const goingUp = y2 < (src.y ?? 0);
-
-  if (goingUp) {
-    // Ruta por el lado derecho, fuera del canvas
-    const exitX = CANVAS_W + 20 + (i % 5) * 18;
-    const srcMidY = (src.y ?? 0) + NODE_H / 2;
-    const tgtMidY = (tgt.y ?? 0) + NODE_H / 2;
-    return {
-      d: `M ${x1} ${(src.y ?? 0) + NODE_H / 2} L ${exitX} ${srcMidY} L ${exitX} ${tgtMidY} L ${x2} ${tgtMidY}`,
-      mx: exitX + 6,
-      my: (srcMidY + tgtMidY) / 2,
-    };
+  if (Math.abs(y2 - y1) < 20) {
+    // Horizontal connection
+    const lx1 = (src.x ?? 0) + NODE_W;
+    const lx2 = tgt.x ?? 0;
+    const my = (src.y ?? 0) + NODE_H / 2;
+    return `M ${lx1} ${my} L ${lx2} ${my}`;
   }
 
-  // Ruta ortogonal hacia abajo con quiebre en midY + laneOffset
-  const midY = y1 + (y2 - y1) / 2;
-  const bendX = x1 + laneOffset;
-  const destX = x2 + laneOffset;
+  const my = (y1 + y2) / 2;
+  return `M ${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`;
+}
 
-  return {
-    d: `M ${x1} ${y1} L ${x1} ${midY} L ${destX} ${midY} L ${destX} ${y2} L ${x2} ${y2}`,
-    mx: (x1 + x2) / 2 + laneOffset / 2,
-    my: midY - 8,
+function edgeMidpoint(src: Nodo, tgt: Nodo): { mx: number; my: number } {
+  const x1 = (src.x ?? 0) + NODE_W / 2;
+  const y1 = (src.y ?? 0) + NODE_H / 2;
+  const x2 = (tgt.x ?? 0) + NODE_W / 2;
+  const y2 = (tgt.y ?? 0) + NODE_H / 2;
+  return { mx: (x1 + x2) / 2, my: (y1 + y2) / 2 };
+}
+
+// ── Wrap text ──────────────────────────────────────────────────
+function wrapLabel(label: string): [string, string] {
+  const MAX = 22;
+  if (label.length <= MAX) return [label, ""];
+  const cut = label.lastIndexOf(" ", MAX);
+  if (cut < 4) return [label.slice(0, MAX - 1) + "…", ""];
+  const rest = label.slice(cut + 1);
+  return [label.slice(0, cut), rest.length > MAX ? rest.slice(0, MAX - 1) + "…" : rest];
+}
+
+// ── SVG Diagram (draggable) ────────────────────────────────────
+interface DiagramProps extends ArquitecturaData {
+  svgRef: React.RefObject<SVGSVGElement | null>;
+}
+
+function Diagram({ nodes: rawNodes, edges, svgRef }: DiagramProps) {
+  // Persists manually-dragged positions keyed by node id.
+  // Never reset by polling — only cleared on explicit "Reset layout".
+  const positionsRef = useRef<Record<string, { x: number; y: number }>>({});
+
+  const buildNodes = useCallback((raw: Nodo[]): Nodo[] => {
+    const laid = layoutNodes(raw);
+    return laid.map((n) => {
+      const saved = positionsRef.current[n.id];
+      return saved ? { ...n, ...saved } : n;
+    });
+  }, []);
+
+  const [nodes, setNodes] = useState<Nodo[]>(() => buildNodes(rawNodes));
+  const [zoom, setZoom] = useState(1);
+  const dragging = useRef<{ id: string; ox: number; oy: number } | null>(null);
+
+  // Sync when rawNodes change (new nodes from server), but KEEP saved positions.
+  const prevIdsRef = useRef<string>("");
+  useEffect(() => {
+    const newIds = rawNodes.map((n) => n.id).sort().join(",");
+    if (newIds === prevIdsRef.current) return; // same nodes → skip reset
+    prevIdsRef.current = newIds;
+    setNodes(buildNodes(rawNodes));
+  }, [rawNodes, buildNodes]);
+
+  const { w, h } = canvasSize(nodes);
+  const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
+
+  // ── Pointer events for drag ──
+  const onPointerDown = (e: PointerEvent<SVGGElement>, id: string) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const svgEl = svgRef.current!;
+    const pt = svgEl.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const svgPt = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
+    const node = nodes.find((n) => n.id === id)!;
+    dragging.current = {
+      id,
+      ox: svgPt.x - (node.x ?? 0),
+      oy: svgPt.y - (node.y ?? 0),
+    };
   };
-}
 
-interface ArquitecturaSVGProps extends ArquitecturaData {
-  svgRef?: React.RefObject<SVGSVGElement>;
-}
+  const onPointerMove = (e: PointerEvent<SVGGElement>) => {
+    if (!dragging.current) return;
+    const svgEl = svgRef.current!;
+    const pt = svgEl.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const svgPt = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
+    const { id, ox, oy } = dragging.current;
+    const nx = Math.max(0, svgPt.x - ox);
+    const ny = Math.max(0, svgPt.y - oy);
+    positionsRef.current[id] = { x: nx, y: ny };
+    setNodes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, x: nx, y: ny } : n))
+    );
+  };
 
-function ArquitecturaSVG({ nodes, edges, svgRef }: ArquitecturaSVGProps) {
-  const laid = layoutNodes(nodes);
-  
-  const nodeMap = Object.fromEntries(laid.map((n) => [n.id, n]));
-  const maxY = Math.max(...laid.map((n) => (n.y ?? 0) + NODE_H)) + 40;
+  const onPointerUp = (e: PointerEvent<SVGGElement>) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    dragging.current = null;
+  };
 
-  const renderedEdges = edges.map((e, i) => {
-    const src = nodeMap[e.source];
-    const tgt = nodeMap[e.target];
-    if (!src || !tgt) return null;
-    const { d, mx, my } = buildPath(src, tgt, i);
-    return { d, label: e.label, mx, my, key: i };
-  });
+  const resetLayout = () => {
+    positionsRef.current = {};
+    setNodes(layoutNodes(rawNodes));
+  };
 
   return (
-    <svg
-      ref={svgRef}
-      width="100%"
-      viewBox={`0 0 ${CANVAS_W} ${maxY}`}
-      style={{ display: "block" }}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <marker
-          id="arq-arrow"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto-start-reverse"
+    <div className="flex flex-col h-full gap-2">
+      {/* Mini toolbar inside canvas */}
+      <div className="flex items-center gap-1.5 px-1">
+        <button
+          onClick={() => setZoom((z) => Math.min(2, z + 0.15))}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+          title="Zoom in"
         >
-          <path
-            d="M2 1L8 5L2 9"
-            fill="none"
-            stroke="#94A3B8"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </marker>
-      </defs>
+          <ZoomIn size={14} />
+        </button>
+        <button
+          onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+          title="Zoom out"
+        >
+          <ZoomOut size={14} />
+        </button>
+        <button
+          onClick={resetLayout}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+          title="Reset layout"
+        >
+          <Maximize2 size={14} />
+        </button>
+        <span className="text-[10px] text-gray-400 ml-1">
+          {Math.round(zoom * 100)}% · Arrastra los nodos para reorganizar
+        </span>
+      </div>
 
-      {/* Fondo blanco para descarga limpia */}
-      <rect width={CANVAS_W} height={maxY} fill="white" />
+      {/* SVG Canvas */}
+      <div className="flex-1 overflow-auto rounded-xl border border-gray-100 bg-[#FAFAFA]"
+        style={{ backgroundImage: "radial-gradient(circle, #e2e8f0 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+      >
+        <svg
+          ref={svgRef}
+          width={w * zoom}
+          height={h * zoom}
+          viewBox={`0 0 ${w} ${h}`}
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ display: "block", cursor: "default" }}
+        >
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5"
+              markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M1 2 L8 5 L1 8" fill="none" stroke="#94A3B8"
+                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </marker>
+            <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#00000014" />
+            </filter>
+          </defs>
 
-      {/* Aristas primero (detrás de los nodos) */}
-      {renderedEdges.map((e) => {
-        if (!e) return null;
-        const labelW = e.label ? Math.min(e.label.length, 22) * 5.5 + 10 : 0;
-        return (
-          <g key={e.key}>
-            <path
-              d={e.d}
-              fill="none"
-              stroke="#CBD5E1"
-              strokeWidth="1.5"
-              markerEnd="url(#arq-arrow)"
-            />
-            {e.label && (
-              <>
+          {/* White background for clean SVG download */}
+          <rect width={w} height={h} fill="white" />
+
+          {/* Edges */}
+          <g>
+            {edges.map((e, i) => {
+              const src = nodeMap[e.source];
+              const tgt = nodeMap[e.target];
+              if (!src || !tgt) return null;
+              const d = edgePath(src, tgt);
+              const { mx, my } = edgeMidpoint(src, tgt);
+              return (
+                <g key={i}>
+                  <path d={d} fill="none" stroke="#CBD5E1" strokeWidth="1.5"
+                    strokeDasharray="none" markerEnd="url(#arr)" />
+                  {e.label && (
+                    <g>
+                      <rect
+                        x={mx - (e.label.length * 3.5 + 8) / 2}
+                        y={my - 9}
+                        width={e.label.length * 3.5 + 8}
+                        height={14}
+                        rx={4}
+                        fill="white"
+                        stroke="#E2E8F0"
+                        strokeWidth="0.5"
+                      />
+                      <text x={mx} y={my + 1} textAnchor="middle"
+                        fontSize="8" fill="#94A3B8" fontFamily="'DM Sans', system-ui, sans-serif">
+                        {e.label.length > 24 ? e.label.slice(0, 23) + "…" : e.label}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
+          </g>
+
+          {/* Nodes */}
+          {nodes.map((n) => {
+            const pal = getPalette(n.tipo);
+            const [l1, l2] = wrapLabel(n.label);
+            const cx = (n.x ?? 0) + NODE_W / 2;
+            const baseY = n.y ?? 0;
+            const textY = baseY + (n.tipo ? 42 : NODE_H / 2 + (l2 ? -6 : 0));
+
+            return (
+              <g
+                key={n.id}
+                style={{ cursor: "grab" }}
+                onPointerDown={(e) => onPointerDown(e, n.id)}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+              >
+                {/* Drop shadow rect */}
                 <rect
-                  x={e.mx - labelW / 2}
-                  y={e.my - 11}
-                  width={labelW}
-                  height={13}
-                  rx={3}
-                  fill="white"
-                  stroke="#E2E8F0"
-                  strokeWidth="0.5"
+                  x={(n.x ?? 0) + 1}
+                  y={(n.y ?? 0) + 3}
+                  width={NODE_W}
+                  height={NODE_H}
+                  rx={12}
+                  fill="#00000012"
+                  style={{ filter: "blur(3px)" }}
                 />
+                {/* Main box */}
+                <rect
+                  x={n.x}
+                  y={n.y}
+                  width={NODE_W}
+                  height={NODE_H}
+                  rx={12}
+                  fill={pal.bg}
+                  stroke={pal.border}
+                  strokeWidth={1.5}
+                />
+                {/* Type badge pill */}
+                {n.tipo && (
+                  <>
+                    <rect
+                      x={cx - (Math.min(n.tipo.length, 16) * 4 + 10) / 2}
+                      y={baseY + 10}
+                      width={Math.min(n.tipo.length, 16) * 4 + 10}
+                      height={13}
+                      rx={6}
+                      fill={pal.badge}
+                    />
+                    <text
+                      x={cx}
+                      y={baseY + 18}
+                      textAnchor="middle"
+                      fontSize="7.5"
+                      fontWeight={700}
+                      fill={pal.border}
+                      fontFamily="'DM Mono', monospace, system-ui"
+                      style={{ letterSpacing: "0.07em", textTransform: "uppercase" }}
+                    >
+                      {n.tipo.length > 16 ? n.tipo.slice(0, 15) + "…" : n.tipo.toUpperCase()}
+                    </text>
+                  </>
+                )}
+                {/* Label line 1 */}
                 <text
-                  x={e.mx}
-                  y={e.my}
+                  x={cx}
+                  y={textY}
                   textAnchor="middle"
-                  fontSize="9"
-                  fill="#94A3B8"
-                  fontFamily="system-ui, sans-serif"
+                  dominantBaseline="middle"
+                  fontSize="11.5"
+                  fontWeight={600}
+                  fill={pal.text}
+                  fontFamily="'DM Sans', system-ui, sans-serif"
                 >
-                  {e.label.length > 22 ? e.label.slice(0, 21) + "…" : e.label}
+                  {l1}
                 </text>
-              </>
-            )}
-          </g>
-        );
-      })}
-
-      {/* Nodos encima */}
-      {laid.map((n) => {
-        const [line1, line2] = splitLabel(n.label, 20);
-        const hasTipo = !!n.tipo;
-        const textY1 = hasTipo
-          ? (n.y ?? 0) + (line2 ? 34 : 40)
-          : (n.y ?? 0) + (line2 ? 26 : NODE_H / 2);
-        const textY2 = textY1 + 15;
-
-        return (
-          <g key={n.id}>
-            {/* Sombra sutil */}
-            <rect
-              x={(n.x ?? 0) + 2}
-              y={(n.y ?? 0) + 3}
-              width={NODE_W}
-              height={NODE_H}
-              rx={10}
-              fill="#00000010"
-            />
-            {/* Cuerpo */}
-            <rect
-              x={n.x}
-              y={n.y}
-              width={NODE_W}
-              height={NODE_H}
-              rx={10}
-              fill={getColor(n.tipo, COLORS)}
-              stroke={getColor(n.tipo, BORDER_COLORS)}
-              strokeWidth={1}
-            />
-            {/* Badge de tipo */}
-            {hasTipo && (
-              <text
-                x={(n.x ?? 0) + NODE_W / 2}
-                y={(n.y ?? 0) + 15}
-                textAnchor="middle"
-                fontSize="8"
-                fill={getColor(n.tipo, TEXT_COLORS)}
-                fontWeight={600}
-                fontFamily="system-ui, sans-serif"
-                style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
-              >
-                {n.tipo!.length > 18 ? n.tipo!.slice(0, 17) + "…" : n.tipo}
-              </text>
-            )}
-            {/* Label línea 1 */}
-            <text
-              x={(n.x ?? 0) + NODE_W / 2}
-              y={textY1}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize="12"
-              fontWeight={600}
-              fill={getColor(n.tipo, TEXT_COLORS)}
-              fontFamily="system-ui, sans-serif"
-            >
-              {line1}
-            </text>
-            {/* Label línea 2 si existe */}
-            {line2 && (
-              <text
-                x={(n.x ?? 0) + NODE_W / 2}
-                y={textY2}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize="12"
-                fontWeight={600}
-                fill={getColor(n.tipo, TEXT_COLORS)}
-                fontFamily="system-ui, sans-serif"
-              >
-                {line2}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
+                {/* Label line 2 */}
+                {l2 && (
+                  <text
+                    x={cx}
+                    y={textY + 15}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="11.5"
+                    fontWeight={600}
+                    fill={pal.text}
+                    fontFamily="'DM Sans', system-ui, sans-serif"
+                  >
+                    {l2}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
   );
 }
 
+// ── Main export ────────────────────────────────────────────────
 export default function ArquitecturaDiagram() {
   const [data, setData] = useState<ArquitecturaData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   const getIds = () => ({
-  doc_id: typeof window !== "undefined" ? sessionStorage.getItem("project_id") ?? "" : "",
-  sessionId: typeof window !== "undefined" ? sessionStorage.getItem("chat_session_id") ?? "" : "",
-});
+    projectId: typeof window !== "undefined" ? sessionStorage.getItem("project_id") ?? "" : "",
+    sessionId: typeof window !== "undefined" ? sessionStorage.getItem("session_id") ?? "" : "",
+  });
 
   const fetchArquitectura = useCallback(async () => {
-  const { doc_id } = getIds();
-  if (!doc_id) { setLoading(false); return; }
-  try {
-    const res = await fetch(
-      `http://127.0.0.1:8000/diagramaaqr/arquitectura?doc_id=${encodeURIComponent(doc_id)}`,
-      { cache: "no-store" }
-    );
-    if (!res.ok) throw new Error("Error al cargar arquitectura");
-    const json = await res.json();
-    if (json.ok) {
-      setData({
-        nodes: (json.nodes ?? []).map((n: any) => ({ id: n.id, label: n.label, tipo: n.type })),
-        edges: (json.edges ?? []).map((e: any) => ({ source: e.from, target: e.to, label: e.label })),
-      });
-      setError(null);
-      if ((json.nodes ?? []).length > 0) setGenerating(false);
+    const { projectId } = getIds();
+    if (!projectId) { setLoading(false); return; }
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/firestore/arquitectura?doc_id=${encodeURIComponent(projectId)}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) throw new Error("Error al cargar arquitectura");
+      const json = await res.json();
+      if (json.ok) {
+        setData({
+          nodes: (json.nodes ?? []).map((n: any) => ({ id: n.id, label: n.label, tipo: n.type })),
+          edges: (json.edges ?? []).map((e: any) => ({ source: e.from, target: e.to, label: e.label })),
+        });
+        setError(null);
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
-  } catch (e: any) {
-    setError(e.message);
-    setGenerating(false);
-  } finally {
-    setLoading(false);
-  }
-}, []);
-
-  // Agrega este useEffect para la carga inicial
-useEffect(() => {
-  fetchArquitectura();
-}, [fetchArquitectura]);
-
-// Este se activa solo cuando generating === true
-useEffect(() => {
-  if (!generating) return;
-  const interval = setInterval(fetchArquitectura, 10000);
-  return () => clearInterval(interval);
-}, [generating, fetchArquitectura]);
+  }, []);
 
   useEffect(() => {
-    const handleRefresh = () => fetchArquitectura();
-    window.addEventListener("ers-refresh", handleRefresh);
-    return () => window.removeEventListener("ers-refresh", handleRefresh);
-}, [fetchArquitectura]);
+    fetchArquitectura();
+    pollRef.current = setInterval(fetchArquitectura, 5000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [fetchArquitectura]);
 
   const handleGenerar = async () => {
-  const { sessionId, doc_id } = getIds();
-  console.log("sessionId:", sessionId); 
-  console.log("doc_id:", doc_id);
-  
-  if (!sessionId || !doc_id) {
-    console.error("Faltan sessionId o doc_id en sessionStorage");
-    return;
-  }
-  
-  setGenerating(true);
-  setError(null);
-  
-  try {
-    const res = await fetch(
-      `http://127.0.0.1:8000/diagramaaqr/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}&doc_id=${encodeURIComponent(doc_id)}`,
-      { method: "POST" }
-    );
-    if (!res.ok) throw new Error("Error al generar arquitectura");
-  } catch (e: any) {
-    setError(e.message);
-    setGenerating(false);
-  }
-};
+    const { sessionId } = getIds();
+    if (!sessionId) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/firestore/generar-arquitectura?session_id=${encodeURIComponent(sessionId)}`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error("Error al generar arquitectura");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleDownload = () => {
     if (!svgRef.current) return;
-    const serializer = new XMLSerializer();
-    const svgStr = serializer.serializeToString(svgRef.current);
-    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const s = new XMLSerializer();
+    const str = s.serializeToString(svgRef.current);
+    const blob = new Blob([str], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "arquitectura.svg";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement("a");
+    a.href = url; a.download = "arquitectura.svg";
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
@@ -459,7 +491,7 @@ useEffect(() => {
           {!isEmpty && (
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm transition hover:bg-gray-50"
+              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm transition hover:bg-gray-50 hover:border-gray-300"
             >
               <Download size={11} />
               SVG
@@ -476,19 +508,26 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Canvas */}
-      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl bg-white shadow-inner">
+      {/* Canvas area */}
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
         {loading && (
-          <div className="flex flex-col items-center gap-2 text-sm text-gray-400">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-gray-400">
             <Loader2 size={20} className="animate-spin" />
             Cargando diagrama…
           </div>
         )}
 
-        {!loading && error && <p className="text-sm text-red-500">{error}</p>}
+        {!loading && error && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-red-500">{error}</p>
+          </div>
+        )}
 
         {!loading && !error && isEmpty && (
-          <div className="flex flex-col items-center gap-3 text-center text-sm text-gray-400">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center text-sm text-gray-400">
+            <div className="w-16 h-16 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center">
+              <RefreshCw size={20} className="text-gray-300" />
+            </div>
             <p>No hay nodos todavía.</p>
             <p className="text-xs">
               Presiona <strong>Generar arquitectura</strong> para que el agente cree el diagrama.
@@ -497,16 +536,18 @@ useEffect(() => {
         )}
 
         {!loading && !error && !isEmpty && (
-          <div className="w-full h-full p-4 overflow-auto">
-            <ArquitecturaSVG nodes={data!.nodes} edges={data!.edges} />
+          <div className="flex-1 overflow-hidden p-3">
+            <Diagram nodes={data!.nodes} edges={data!.edges} svgRef={svgRef} />
           </div>
         )}
 
         {generating && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
-              <Loader2 size={24} className="animate-spin text-[#EB0029]" />
-              El agente está generando la arquitectura…
+          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3 text-sm text-gray-500">
+              <div className="relative">
+                <Loader2 size={28} className="animate-spin text-[#EB0029]" />
+              </div>
+              <p className="font-medium">El agente está generando la arquitectura…</p>
             </div>
           </div>
         )}
