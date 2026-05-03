@@ -67,7 +67,7 @@ export default function ProyectosDashboard() {
       setAiMessage("");
 
       const res = await fetch(
-        `https://api-anemona-637376850775.northamerica-northeast1.run.app/usuarios/${idusuario}/proyectos/buscar-con-agente-local`,
+        `https://api-anemona-637376850775.northamerica-northeast1.run.app/usuarios/${idusuario}/proyectos/buscar-con-agente`,
         {
           method: "POST",
           headers: {

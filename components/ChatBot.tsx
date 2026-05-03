@@ -388,12 +388,6 @@ export default function ChatBot() {
       <section className="flex-1 min-w-[420px] min-h-0 relative">
         <div className="h-full rounded-3xl bg-gray-100 shadow-md p-6 flex flex-col">
 
-          <div className="mb-4 text-center">
-            <h2 className="text-2xl font-extrabold text-gray-600 tracking-wide">
-              {sessionId || "Sin sesión"}
-            </h2>
-          </div>
-
           <div className="flex-1 min-h-0 overflow-y-auto pr-2 flex flex-col gap-3">
             {messages.map((m) => renderMessage(m))}
 

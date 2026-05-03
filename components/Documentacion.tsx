@@ -20,9 +20,7 @@ import {
 import WidgetRenderer from "./DynamicVisor";
 import WidgetsModal from "./WidgetsModal";
 import { Widget } from "./widgets/BibliotecaWidgets";
-
-const DRAWIO_EMBED_URL =
-  "https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagramaarq.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1K0pWBSO4_RdxmUlAippvNTiQZfnkcoSJ%26export%3Ddownload";
+import ArquitecturaDiagram from "./ArquitecturaDiagram";
 
 const API_BASE = "https://api-anemona-637376850775.northamerica-northeast1.run.app";
 
@@ -258,26 +256,25 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
     ? "flex-1 h-full min-w-[520px] transition-all duration-300"
     : "w-full max-w-xs h-full transition-all duration-300";
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(DRAWIO_EMBED_URL);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = tab === "Arquitectura"
-        ? "arquitectura.drawio"
-        : `${DOC_NAMES[tab].replace(/ /g, "_")}.docx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Error al descargar:", error);
-    } finally {
-      setShowPopup(true);
-    }
-  };
+
+  const handleDownload = () => {
+  if (tab === "Arquitectura") {
+    const svgEl = document.querySelector("#arq-svg-container svg") as SVGSVGElement | null;
+    if (!svgEl) return;
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "arquitectura.svg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setShowPopup(true);
+  }
+};
 
   return (
     <>
@@ -329,12 +326,12 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
                           )}
                         </div>
                       ) : (
-                        <iframe
-                          src={DRAWIO_EMBED_URL}
-                          className="border-0"
-                          title={DOC_NAMES[t]}
-                          style={{ pointerEvents: "none", width: "170%", height: "170%", transform: "scale(0.588)", transformOrigin: "top left" }}
-                        />
+                        <div
+                          className="pointer-events-none h-full w-full overflow-hidden"
+                          style={{ transform: "scale(0.33)", transformOrigin: "top left", width: "303%", height: "303%" }}
+                        >
+                          <ArquitecturaDiagram />
+                        </div>
                       )}
                       <button
                         onClick={() => { setTab(t); onToggle(); }}
@@ -404,14 +401,10 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
                     )}
                   </div>
                 ) : (
-                  <iframe
-                    key={tab}
-                    src={DRAWIO_EMBED_URL}
-                    className="h-full w-full border-0"
-                    title={tab}
-                    allow="fullscreen"
-                  />
-                )}
+                <div id="arq-svg-container" className="h-full w-full overflow-auto p-4">
+                  <ArquitecturaDiagram />
+                </div>
+              )}
               </div>
             </>
           )}
