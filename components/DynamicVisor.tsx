@@ -34,6 +34,9 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
   const [pages, setPages] = useState<BlockDef[][]>([]);
   const [measured, setMeasured] = useState(false);
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [showError, setShowError] = useState(false);// Pop up error al guardar plantilla
+  const [showSuccess, setShowSuccess] = useState(false); // Pop up exito al guardar plantilla
+
 
   // Actualiza valores de campos sin tocar la estructura de widgets
   const handleChange = (posicion: number, key: string, value: string) => {
@@ -59,21 +62,24 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
   // Guarda los widgets editados en Firestore
   const handleSave = async () => {
     const docId = sessionStorage.getItem("project_id") || "";
+    if (!docId) { setShowError(true); return; }
+
     setLoading(true);
     try {
       const res = await fetch(
-        `${API_URL}/widgets/modificar?doc_id=${encodeURIComponent(docId)}`,
+        `${API_URL}/widgets/modificar/${encodeURIComponent(docId)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(widgets),
         }
       );
-      if (!res.ok) throw new Error("Error");
-      alert("✅ Guardado correctamente");
+      if (!res.ok) { setShowError(true); return; }
+      setShowSuccess(true);
+      window.dispatchEvent(new CustomEvent("ers-refresh"));
     } catch (e) {
       console.error(e);
-      alert("❌ Error al guardar");
+      setShowError(true);
     } finally {
       setLoading(false);
     }
@@ -249,6 +255,8 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
                 </div>
               );
             })}
+
+            
           </div>
 
           {/* Footer */}
@@ -256,7 +264,37 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
             <img src="/images/banortegf.png" alt="Footer Banorte" className="h-[65px] object-contain" />
           </div>
         </div>
-      ))}
+))}
+
+      {/* POPUP ÉXITO */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[520px] p-10 flex flex-col items-center text-center">
+            <button onClick={() => setShowSuccess(false)} className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg">✕</button>
+            <div className="mb-5"><img src="/images/OpExitosa.png" alt="Operación exitosa" className="w-20 h-20 object-contain" /></div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Cambios guardados</h2>
+            <p className="text-gray-500 text-sm mb-2">Tu documento ha sido guardado exitosamente el día:</p>
+            <p className="text-gray-800 font-bold text-base mb-8">
+              {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+            </p>
+            <button onClick={() => setShowSuccess(false)} className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition">Confirmar</button>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP ERROR */}
+      {showError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[520px] p-10 flex flex-col items-center text-center">
+            <button onClick={() => setShowError(false)} className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg">✕</button>
+            <div className="mb-5"><img src="/images/Error.png" alt="Error" className="w-20 h-20 object-contain" /></div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Error al guardar</h2>
+            <p className="text-gray-500 text-sm mb-8">No se pudo guardar. Por favor intenta de nuevo.</p>
+            <button onClick={() => setShowError(false)} className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition">Aceptar</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
