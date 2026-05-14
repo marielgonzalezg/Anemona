@@ -38,32 +38,35 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [draggingWidget, setDraggingWidget] = useState<(typeof widgetList)[number] | null>(null);
   const [saving, setSaving] = useState(false);
-
+  const [showSuccess, setShowSuccess] = useState(false); // PopUp nuevo success
   // ID del último widget añadido por drag — se resalta en amarillo hasta guardar
   //const [newWidgetIndices, setNewWidgetIndices] = useState<Set<number>>(new Set());
 
   // Para drag and drop de reordenamiento en el panel izquierdo
   const [draggingDocIndex, setDraggingDocIndex] = useState<number | null>(null);
   const [reorderDropIndex, setReorderDropIndex] = useState<number | null>(null);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null); // pop up confirmación de borrado de widget 
+  const [showError, setShowError] = useState(false); // pop up error al guardar plantilla
+
 
   useEffect(() => {
-  if (isOpen) {
-    setDocWidgets(widgets);
-  }
-}, [isOpen]);
+    if (isOpen) {
+      setDocWidgets(widgets);
+    }
+  }, [isOpen]);
 
   function handleChange(index: number, key: string, value: any) {
-  setDocWidgets((prev) => {
-    const updated = prev.map((w, i) => {
-      if (i !== index) return w;
-      return { ...w, campos: { ...w.campos, [key]: value } };
+    setDocWidgets((prev) => {
+      const updated = prev.map((w, i) => {
+        if (i !== index) return w;
+        return { ...w, campos: { ...w.campos, [key]: value } };
+      });
+      setTimeout(() => {
+        onWidgetsChange?.(updated.map(({ _isNew, ...w }) => w));
+      }, 0);
+      return updated;
     });
-    setTimeout(() => {
-      onWidgetsChange?.(updated.map(({ _isNew, ...w }) => w));
-    }, 0);
-    return updated;
-  });
-}
+  }
 
   // Inserta widget del panel derecho en posición exacta
   function handleDrop(insertAtIndex: number) {
@@ -75,11 +78,11 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
       titulo: draggingWidget.titulo,
       objetivo_widget: draggingWidget.objetivo_widget,
       descripcion_campos: Object.fromEntries(
-  Object.entries(draggingWidget.descripcion_campos || {}).filter(
-    ([_, v]) => typeof v === "string"
-  )
-),
-        campos: { ...draggingWidget.campos } as Record<string, any>,
+        Object.entries(draggingWidget.descripcion_campos || {}).filter(
+          ([_, v]) => typeof v === "string"
+        )
+      ),
+      campos: { ...draggingWidget.campos } as Record<string, any>,
       _isNew: true, // <- agrega esto
     };
     // borra el setNewWidgetIndices que viene después
@@ -115,14 +118,22 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
     setReorderDropIndex(null);
   }
 
+  function handleDelete(index: number) {
+    setDocWidgets((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.map((w, i) => ({ ...w, posicion: i }));
+    });
+    setDeleteIndex(null);
+  }
+
   async function handleSave() {
     const docId = sessionStorage.getItem("project_id") || "";
     if (!docId) { alert("No hay proyecto activo"); return; }
-    
+
 
     setSaving(true);
     try {
-      
+
       const payload = docWidgets.map(({ _isNew, ...w }) => w);
       console.log("💾 GUARDANDO PLANTILLA:");
       console.log(JSON.stringify(payload, null, 2)); // <- usa payload
@@ -142,17 +153,73 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
 
 
       // Al guardar exitosamente, quita el resaltado amarillo
-      alert("✅ Plantilla guardada correctamente");
+      setShowSuccess(true);
       window.dispatchEvent(new CustomEvent("ers-refresh")); // <- agrega esto
     } catch (e) {
       console.error(e);
-      alert("❌ Error al guardar la plantilla");
+      setShowError(true);
     } finally {
       setSaving(false);
     }
   }
+  // POP UP ERROR AL GUARDAR PLANTILLA 
+  if (showError) return (
+  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
+    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[520px] p-10 flex flex-col items-center text-center">
+      <button
+        onClick={() => setShowError(false)}
+        className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg"
+      >✕</button>
 
-  if (!isOpen) return null;
+      <div className="mb-5">
+        <img src="/images/Error.png" alt="Error" className="w-20 h-20 object-contain" />
+      </div>
+
+      <h2 className="text-2xl font-bold text-gray-900 mb-3">Error al guardar</h2>
+      <p className="text-gray-500 text-sm mb-8">No se pudo guardar la plantilla. Por favor intenta de nuevo.</p>
+
+      <button
+        onClick={() => setShowError(false)}
+        className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition"
+      >
+        Aceptar
+      </button>
+    </div>
+  </div>
+);
+
+  // POP UP EXITOSO AL GUARDAR PLANTILLA 
+  if (showSuccess) return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
+      <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[520px] p-10 flex flex-col items-center text-center">
+        <button
+          onClick={() => setShowSuccess(false)}
+          className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg"
+        >✕</button>
+
+        {/* Ícono */}
+
+        <div className="mb-5">
+          <img src="/images/OpExitosa.png" alt="Operación exitosa" className="w-20 h-20 object-contain" />
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">Plantilla guardada</h2>
+        <p className="text-gray-500 text-sm mb-2">Tu plantilla ha sido guardada exitosamente el día:</p>
+        <p className="text-gray-800 font-bold text-base mb-8">
+          {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })
+            .replace(/^\w/, c => c.toUpperCase())}
+        </p>
+
+        <button
+          onClick={() => setShowSuccess(false)}
+          className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition"
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  );
+if (!isOpen) return null;
 
   // Determina si un widget es el recién añadido (amarillo)
   // Usamos el índice del último elemento añadido como proxy
@@ -265,11 +332,21 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
                             {/* Icono drag */}
                             <div className="absolute top-2 right-3 text-gray-300 text-sm select-none">⠿</div>
 
+                            {/* Botón eliminar */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteIndex(i); }}
+                              className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#EB0029] flex items-center justify-center shadow-sm z-10 transition"
+
+                              title="Eliminar widget"
+                            >
+                              <span className="text-white text-sm font-bold leading-none mb-[1px]">−</span>
+                            </button>
+
                             <div className="pt-5 px-2 pb-2">
                               {renderWidgetNode(widget, (posicion, key, value) => handleChange(i, key, value))}
                             </div>
 
-                            </div> 
+                          </div>
 
                           {/* Drop zone para nuevo widget (desde panel derecho) */}
                           <DropZone
@@ -334,8 +411,40 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
               ))}
             </div>
           </div>
+        </div>{/* cierre de div relative z-10 flex */}
 
-        </div>
+        {/* POPUP confirmación de borrado */}
+        {deleteIndex !== null && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-500/60">
+
+            <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[380px] p-8 flex flex-col items-center text-center">
+              <button
+                onClick={() => setDeleteIndex(null)}
+                className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg"
+              >✕</button>
+              <div className="mb-4">
+                <img src="/images/Confirmacion.png" alt="Confirmación" className="w-20 h-20 object-contain" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">¿Estás segura?</h2>
+              <p className="text-gray-500 text-sm mb-6">Este widget será eliminado de tu plantilla.</p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setDeleteIndex(null)}
+                  className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteIndex)}
+                  className="flex-1 bg-[#EB0029] text-white py-2.5 rounded-xl font-semibold hover:opacity-90 transition"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -365,7 +474,7 @@ function DropZone({ index, isActive, isDragging, onDragOver, onDragLeave, onDrop
 
 const SCALE = 0.34;
 const DOC_WIDTH = 816;
-const noop = () => {};
+const noop = () => { };
 
 function ScaledWidgetPreview({ widget }: { widget: Widget }) {
   const innerRef = useRef<HTMLDivElement>(null);
