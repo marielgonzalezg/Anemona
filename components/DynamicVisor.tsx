@@ -136,9 +136,8 @@ const WidgetRenderer: React.FC<Props> = ({
     if (measured) return;
 
     if (sortedWidgets.length === 0) {
-      setPages([[{ id: "intro", node: null }]]);
-      setMeasured(true);
-      return;
+    console.warn("No hay widgets para renderizar en el PDF");
+    return;
     }
 
     const raf = requestAnimationFrame(() => {

@@ -12,21 +12,34 @@ export default function PdfDocumentPage() {
   const [loading, setLoading] = useState(true);
 
   const mapDataToWidgets = (data: any): Widget[] => {
-    const posiciones: string[] = data.posiciones ?? [];
+  const posiciones = data.posiciones ?? [];
 
-    return posiciones.map((widgetId, index) => {
-      const w = data[widgetId] ?? {};
+  return posiciones.map((item: any, index: number) => {
+    // Caso 1: posiciones trae strings: ["w_000", "w_001"]
+    if (typeof item === "string") {
+      const w = data[item] ?? {};
 
       return {
         posicion: index,
-        id_widget: widgetId,
-        titulo: w.titulo ?? widgetId,
+        id_widget: item,
+        titulo: w.titulo ?? item,
         objetivo_widget: w.objetivo_widget ?? "",
         descripcion_campos: w.descripcion_campos ?? {},
         campos: w.campos ?? {},
       };
-    });
-  };
+    }
+
+    // Caso 2: posiciones trae objetos completos
+    return {
+      posicion: item.posicion ?? index,
+      id_widget: item.id_widget ?? item.id ?? "",
+      titulo: item.titulo ?? item.id_widget ?? "",
+      objetivo_widget: item.objetivo_widget ?? "",
+      descripcion_campos: item.descripcion_campos ?? {},
+      campos: item.campos ?? {},
+    };
+  });
+};
 
   useEffect(() => {
     const fetchDocumento = async () => {
