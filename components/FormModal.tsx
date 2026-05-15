@@ -157,7 +157,7 @@ export default function FormModal({
       {
         label: "Patrocinador",
         key: "patrocinador",
-        placeholder: "Tecnología",
+        placeholder: "Banorte",
       },
       {
         label: "Nombre del socio de negocio",
@@ -172,7 +172,7 @@ export default function FormModal({
       {
         label: "Nombre de la iniciativa",
         key: "iniciativa",
-        placeholder: "0",
+        placeholder: "Proyecto",
       },
     ];
 
@@ -671,7 +671,7 @@ export default function FormModal({
                   value={formData.tipo}
                   onChange={(e) => handleChange("tipo", e.target.value)}
                   className="w-full bg-transparent outline-none text-sm text-[#5B6670] placeholder:text-[#b5bcc2]"
-                  placeholder="<Prueba de Concepto, Idea, Mantenimiento, Proyecto>"
+                  placeholder="Prueba de Concepto, Idea, Mantenimiento, Proyecto"
                 />
               </div>
               <div className="h-[1px] bg-[#5B6670] mt-[1px] w-full" />
