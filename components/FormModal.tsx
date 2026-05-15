@@ -167,13 +167,14 @@ export default function FormModal({
       {
         label: "CR",
         key: "cr",
-        placeholder: "0",
+        placeholder: "0123",
       },
       {
         label: "Nombre de la iniciativa",
         key: "iniciativa",
-        placeholder: "Proyecto",
+        placeholder: "Sistema de ...",
       },
+      
     ];
 
   const isFormValid =
