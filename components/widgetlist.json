@@ -1,5 +1,7 @@
 [
   {
+            "info": "Descripción general de la iniciativa, este widget es ideal para proporcionar un resumen o contexto sobre la iniciativa que se está documentando. Modifica el header y los campos según tus necesidades.",
+
     "id_widget": "w_001",
     "posicion": 1,
     "titulo": "Descripción de la Iniciativa",
@@ -12,6 +14,8 @@
     }
   },
   {
+        "info": "Sección de subitulo con campos de texto. Modifica el header y los campos según tus necesidades. Ejemplo: OBJETIVO, ALCANCE.",
+
     "id_widget": "w_002",
     "posicion": 2,
     "titulo": "Objetivos y Alcance",
