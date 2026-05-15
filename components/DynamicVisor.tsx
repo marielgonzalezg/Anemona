@@ -28,15 +28,17 @@ export type BlockDef = {
   node: React.ReactNode;
 };
 
-const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedFields }) => {
+const WidgetRenderer: React.FC<Props> = ({
+  widgets: initialWidgets,
+  changedFields,
+}) => {
   const [widgets, setWidgets] = useState<Widget[]>(initialWidgets);
   const [loading, setLoading] = useState(false);
   const [pages, setPages] = useState<BlockDef[][]>([]);
   const [measured, setMeasured] = useState(false);
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [showError, setShowError] = useState(false);// Pop up error al guardar plantilla
+  const [showError, setShowError] = useState(false); // Pop up error al guardar plantilla
   const [showSuccess, setShowSuccess] = useState(false); // Pop up exito al guardar plantilla
-
 
   // Actualiza valores de campos sin tocar la estructura de widgets
   const handleChange = (posicion: number, key: string, value: string) => {
@@ -44,14 +46,14 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
       prev.map((w) => {
         if (w.posicion !== posicion) return w;
         return { ...w, campos: { ...w.campos, [key]: value } };
-      })
+      }),
     );
   };
 
   // Widgets ordenados por posición
   const sortedWidgets = useMemo(
     () => [...widgets].sort((a, b) => a.posicion - b.posicion),
-    [widgets]
+    [widgets],
   );
 
   // Resalta en amarillo los campos que cambió el chat
@@ -62,7 +64,10 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
   // Guarda los widgets editados en Firestore
   const handleSave = async () => {
     const docId = sessionStorage.getItem("project_id") || "";
-    if (!docId) { setShowError(true); return; }
+    if (!docId) {
+      setShowError(true);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -72,9 +77,12 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(widgets),
-        }
+        },
       );
-      if (!res.ok) { setShowError(true); return; }
+      if (!res.ok) {
+        setShowError(true);
+        return;
+      }
       setShowSuccess(true);
       window.dispatchEvent(new CustomEvent("ers-refresh"));
     } catch (e) {
@@ -88,18 +96,25 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
   // Renderiza el widget correcto según su id
   const renderWidget = (widget: Widget) => {
     switch (widget.id_widget) {
-      case "w_000": return renderW000(widget, handleChange, highlight); //
-      case "w_001": return renderW001(widget, handleChange, highlight); //
-      case "w_002": return renderW002(widget, handleChange, highlight); //
-      case "w_003": return renderW003(widget, handleChange, highlight); //
-      default: return null; 
+      case "w_000":
+        return renderW000(widget, handleChange, highlight); //
+      case "w_001":
+        return renderW001(widget, handleChange, highlight); //
+      case "w_002":
+        return renderW002(widget, handleChange, highlight); //
+      case "w_003":
+        return renderW003(widget, handleChange, highlight); //
+      default:
+        return null;
     }
   };
 
   // Clave que identifica la estructura de widgets (no sus valores).
   // Solo cambia cuando se agrega/quita un widget, no cuando se edita un campo.
   // Así el reset de paginación no se dispara al escribir.
-  const widgetKeys = sortedWidgets.map(w => `${w.id_widget}-${w.posicion}`).join(",");
+  const widgetKeys = sortedWidgets
+    .map((w) => `${w.id_widget}-${w.posicion}`)
+    .join(",");
 
   // Resetea paginación cuando cambia la estructura de widgets
   useEffect(() => {
@@ -118,7 +133,12 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
   // - measureRefs[i+1] = widget i
   // Acumula bloques hasta superar USABLE_HEIGHT, luego abre nueva página
   useEffect(() => {
-    if (measured || sortedWidgets.length === 0) return;
+    if (measured) return;
+
+    if (sortedWidgets.length === 0) {
+    console.warn("No hay widgets para renderizar en el PDF");
+    return;
+    }
 
     const raf = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -136,7 +156,10 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
         sortedWidgets.forEach((widget, i) => {
           const node = renderWidget(widget);
           if (!node) return;
-          const block: BlockDef = { id: `${widget.id_widget}-${widget.posicion}`, node };
+          const block: BlockDef = {
+            id: `${widget.id_widget}-${widget.posicion}`,
+            node,
+          };
           const h = heights[i + 1]; // i+1 porque measureRefs[0] es el párrafo intro
           if (currentHeight + h > USABLE_HEIGHT && currentPage.length > 0) {
             result.push(currentPage);
@@ -164,31 +187,64 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
     return (
       <div className="w-full bg-[#ececec] py-8 px-4">
         <div className="flex items-center justify-center py-16 text-sm text-gray-400">
-          <svg className="mr-2 h-5 w-5 animate-spin text-[#EB0029]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          <svg
+            className="mr-2 h-5 w-5 animate-spin text-[#EB0029]"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8z"
+            />
           </svg>
           Calculando paginación...
         </div>
         <div
           aria-hidden="true"
-          style={{ position: "absolute", top: 0, left: "-9999px", visibility: "hidden", pointerEvents: "none", width: "716px", zIndex: -1 }}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: "-9999px",
+            visibility: "hidden",
+            pointerEvents: "none",
+            width: "716px",
+            zIndex: -1,
+          }}
         >
           {/* índice 0: párrafo introductorio */}
-          <div ref={(el) => { measureRefs.current[0] = el; }}>
+          <div
+            ref={(el) => {
+              measureRefs.current[0] = el;
+            }}
+          >
             <p className="mb-8 text-[13px] leading-[1.2]">
-              Este cuestionario tiene como propósito conocer cuáles son los beneficios,
-              costos y riesgos relacionados con cada iniciativa que ingresa al
-              portafolio de proyectos y mantenimientos tecnológicos de Áreas de
-              Soporte. Esta información será de utilidad para ponderar el portafolio
-              en su conjunto y priorizar la atención de los requerimientos de acuerdo
-              a su beneficio económico, alineación estratégica y conveniencia de su
-              realización.
+              Este cuestionario tiene como propósito conocer cuáles son los
+              beneficios, costos y riesgos relacionados con cada iniciativa que
+              ingresa al portafolio de proyectos y mantenimientos tecnológicos
+              de Áreas de Soporte. Esta información será de utilidad para
+              ponderar el portafolio en su conjunto y priorizar la atención de
+              los requerimientos de acuerdo a su beneficio económico, alineación
+              estratégica y conveniencia de su realización.
             </p>
           </div>
           {/* índices 1..n: widgets */}
           {sortedWidgets.map((widget, i) => (
-            <div key={`${widget.id_widget}-${widget.posicion}`} ref={(el) => { measureRefs.current[i + 1] = el; }}>
+            <div
+              key={`${widget.id_widget}-${widget.posicion}`}
+              ref={(el) => {
+                measureRefs.current[i + 1] = el;
+              }}
+            >
               {renderWidget(widget)}
             </div>
           ))}
@@ -223,62 +279,106 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
             <div className="flex items-center justify-between px-12 py-7">
               <div className="text-[22px] font-semibold leading-none text-[#7c7c7c]">
                 <span>Formato Estándar | </span>
-                <span className="font-normal">Levantamiento de Requerimiento</span>
+                <span className="font-normal">
+                  Levantamiento de Requerimiento
+                </span>
               </div>
-              <img src="/images/rayaNegra.png" alt="Encabezado" className="h-[45px] object-cover" />
+              <img
+                src="/images/rayaNegra.png"
+                alt="Encabezado"
+                className="h-[45px] object-cover"
+              />
             </div>
           </div>
 
           {/* Contenido */}
           <div
             className="text-black text-[13px] leading-[1.28]"
-            style={{ height: "856px", overflow: "hidden", paddingTop: "24px", paddingBottom: "24px", paddingLeft: "47px", paddingRight: "51px", boxSizing: "border-box" }}
+            style={{
+              height: "856px",
+              overflow: "hidden",
+              paddingTop: "24px",
+              paddingBottom: "24px",
+              paddingLeft: "47px",
+              paddingRight: "51px",
+              boxSizing: "border-box",
+            }}
           >
             {/* Párrafo introductorio solo en página 1 */}
             {pageIndex === 0 && (
               <p className="mb-8 text-[13px] leading-[1.2]">
-                Este cuestionario tiene como propósito conocer cuáles son los beneficios,
-                costos y riesgos relacionados con cada iniciativa que ingresa al
-                portafolio de proyectos y mantenimientos tecnológicos de Áreas de
-                Soporte. Esta información será de utilidad para ponderar el portafolio
-                en su conjunto y priorizar la atención de los requerimientos de acuerdo
-                a su beneficio económico, alineación estratégica y conveniencia de su
+                Este cuestionario tiene como propósito conocer cuáles son los
+                beneficios, costos y riesgos relacionados con cada iniciativa
+                que ingresa al portafolio de proyectos y mantenimientos
+                tecnológicos de Áreas de Soporte. Esta información será de
+                utilidad para ponderar el portafolio en su conjunto y priorizar
+                la atención de los requerimientos de acuerdo a su beneficio
+                económico, alineación estratégica y conveniencia de su
                 realización.
               </p>
             )}
             {pageBlocks.map((block) => {
               // El bloque "intro" ya se renderiza arriba, se omite aquí
               if (block.id === "intro") return null;
-              const widget = sortedWidgets.find(w => `${w.id_widget}-${w.posicion}` === block.id);
+              const widget = sortedWidgets.find(
+                (w) => `${w.id_widget}-${w.posicion}` === block.id,
+              );
               return (
-                <div key={block.id}>
-                  {widget ? renderWidget(widget) : null}
-                </div>
+                <div key={block.id}>{widget ? renderWidget(widget) : null}</div>
               );
             })}
-
-            
           </div>
 
           {/* Footer */}
           <div className="flex h-[90px] items-center px-6">
-            <img src="/images/banortegf.png" alt="Footer Banorte" className="h-[65px] object-contain" />
+            <img
+              src="/images/banortegf.png"
+              alt="Footer Banorte"
+              className="h-[65px] object-contain"
+            />
           </div>
         </div>
-))}
+      ))}
 
       {/* POPUP ÉXITO */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[520px] p-10 flex flex-col items-center text-center">
-            <button onClick={() => setShowSuccess(false)} className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg">✕</button>
-            <div className="mb-5"><img src="/images/OpExitosa.png" alt="Operación exitosa" className="w-20 h-20 object-contain" /></div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Cambios guardados</h2>
-            <p className="text-gray-500 text-sm mb-2">Tu documento ha sido guardado exitosamente el día:</p>
-            <p className="text-gray-800 font-bold text-base mb-8">
-              {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+            <button
+              onClick={() => setShowSuccess(false)}
+              className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg"
+            >
+              ✕
+            </button>
+            <div className="mb-5">
+              <img
+                src="/images/OpExitosa.png"
+                alt="Operación exitosa"
+                className="w-20 h-20 object-contain"
+              />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              Cambios guardados
+            </h2>
+            <p className="text-gray-500 text-sm mb-2">
+              Tu documento ha sido guardado exitosamente el día:
             </p>
-            <button onClick={() => setShowSuccess(false)} className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition">Confirmar</button>
+            <p className="text-gray-800 font-bold text-base mb-8">
+              {new Date()
+                .toLocaleDateString("es-MX", {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
+                .replace(/^\w/, (c) => c.toUpperCase())}
+            </p>
+            <button
+              onClick={() => setShowSuccess(false)}
+              className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition"
+            >
+              Confirmar
+            </button>
           </div>
         </div>
       )}
@@ -287,17 +387,36 @@ const WidgetRenderer: React.FC<Props> = ({ widgets: initialWidgets, changedField
       {showError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[520px] p-10 flex flex-col items-center text-center">
-            <button onClick={() => setShowError(false)} className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg">✕</button>
-            <div className="mb-5"><img src="/images/Error.png" alt="Error" className="w-20 h-20 object-contain" /></div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Error al guardar</h2>
-            <p className="text-gray-500 text-sm mb-8">No se pudo guardar. Por favor intenta de nuevo.</p>
-            <button onClick={() => setShowError(false)} className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition">Aceptar</button>
+            <button
+              onClick={() => setShowError(false)}
+              className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg"
+            >
+              ✕
+            </button>
+            <div className="mb-5">
+              <img
+                src="/images/Error.png"
+                alt="Error"
+                className="w-20 h-20 object-contain"
+              />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              Error al guardar
+            </h2>
+            <p className="text-gray-500 text-sm mb-8">
+              No se pudo guardar. Por favor intenta de nuevo.
+            </p>
+            <button
+              onClick={() => setShowError(false)}
+              className="bg-[#EB0029] text-white px-16 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition"
+            >
+              Aceptar
+            </button>
           </div>
         </div>
       )}
-
     </div>
   );
-};
+};;
 
 export default WidgetRenderer;
