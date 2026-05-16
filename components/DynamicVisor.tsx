@@ -106,7 +106,7 @@ const WidgetRenderer: React.FC<Props> = ({
       case "w_002":
         return renderW002(widget, handleChange, highlight); //
       case "w_003":
-        return renderW003(widget, handleChange, highlight); //
+          return renderW003(widget, handleChange, highlight, false); //
       case "w_004":
         return renderWChart(widget, handleChange); //
       case "w_005": 

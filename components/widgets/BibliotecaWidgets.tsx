@@ -304,7 +304,8 @@ export const renderW002 = (
 export const renderW003 = (
   widget: Widget,
   onChange: (posicion: number, key: string, value: any) => void,
-  highlight: (path: string) => string = () => ""
+  highlight: (path: string) => string = () => "",
+  showControls: boolean = true // opcional la vista de la coluna extra y las lineas punteadas
 ) => {
   const campos = widget.campos || {};
 
@@ -357,11 +358,12 @@ export const renderW003 = (
           <span className="flex items-center gap-1 text-[18px]">
             {`${widget.posicion}`}
             <input
-              value={titulo}
-              onChange={(e) => handleTituloChange(e.target.value)}
-              className="bg-transparent outline-none border-b border-dashed border-gray-400
-                         focus:border-blue-500 font-semibold"
-            />
+  value={titulo}
+  onChange={(e) => handleTituloChange(e.target.value)}
+  className={`bg-transparent outline-none font-semibold
+    ${showControls ? "border-b border-dashed border-gray-400 focus:border-blue-500" : ""}
+  `}
+/>
             {"."}
           </span>
         }
@@ -373,41 +375,44 @@ export const renderW003 = (
         <table className="mb-8 w-full border border-black text-[13px]">
           <thead>
             <tr className="bg-[#133b73] text-white">
-              {headers.map((h, i) => (
-                <th key={h.key} className="border px-3 py-1 min-w-[120px]">
-                  <input
-                    value={h.label}
-                    onChange={(e) => handleHeaderLabelChange(i, e.target.value)}
-                    className="bg-transparent text-white text-center outline-none
-                               border-b border-dashed border-white/40
-                               focus:border-white w-full font-semibold"
-                  />
-                </th>
-              ))}
-              <th className="border px-2 py-1 w-10">
-                <button
-                  onClick={handleAddColumn}
-                  title="Agregar columna"
-                  className="text-white/70 hover:text-white text-lg leading-none"
-                >
-                  +
-                </button>
-              </th>
-            </tr>
+  {headers.map((h, i) => (
+    <th key={h.key} className="border px-3 py-1 min-w-[120px]">
+      <input
+        value={h.label}
+        onChange={(e) => handleHeaderLabelChange(i, e.target.value)}
+        className={`bg-transparent text-white text-center outline-none w-full font-semibold
+          ${showControls ? "border-b border-dashed border-white/40 focus:border-white" : ""}`}
+      />
+    </th>
+  ))}
+
+  {showControls && (
+    <th className="border px-2 py-1 w-10">
+      <button
+        onClick={handleAddColumn}
+        title="Agregar columna"
+        className="text-white/70 hover:text-white text-lg leading-none"
+      >
+        +
+      </button>
+    </th>
+  )}
+</tr>
           </thead>
           <tbody>
             {filas.length ? (
               filas.map((fila: any, rowIdx: number) => (
                 <tr key={rowIdx}>
                   {headers.map((h) => (
-                    <td key={h.key} className="border px-2 py-1 align-top">
-                      <EditableText
-                        value={fila[h.key] ?? ""}
-                        onChange={(v) => handleRowChange(rowIdx, h.key, v)}
-                      />
-                    </td>
-                  ))}
-                  <td className="border" />
+  <td key={h.key} className="border px-2 py-1 align-top">
+    <EditableText
+      value={fila[h.key] ?? ""}
+      onChange={(v) => handleRowChange(rowIdx, h.key, v)}
+    />
+  </td>
+))}
+
+{showControls && <td className="border" />}
                 </tr>
               ))
             ) : (
