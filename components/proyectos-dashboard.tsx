@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Home, File as FileIcon, Filter, Calendar, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -50,6 +50,7 @@ export default function ProyectosDashboard() {
   const [filtroNombre, setFiltroNombre] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("");
   const [filtroArea, setFiltroArea] = useState("");
+  const fechaInputRef = useRef<HTMLInputElement | null>(null);
 
   const limpiarFiltros = () => {
     setFiltroFolio("");
@@ -284,17 +285,35 @@ export default function ProyectosDashboard() {
             />
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs text-gray-500">Fecha</label>
-            <div className="relative">
-              <input
-                type="date"
-                value={filtroFecha}
-                onChange={(e) => setFiltroFecha(e.target.value)}
-                className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-[#EB0029]"
+         <div>
+          <label className="mb-1 block text-xs text-gray-500">Fecha</label>
+
+          <div className="relative">
+            <input
+              ref={fechaInputRef}
+              type="date"
+              value={filtroFecha}
+              onChange={(e) => setFiltroFecha(e.target.value)}
+              className="custom-date-input w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 pr-10 text-sm outline-none focus:border-[#EB0029]"
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                fechaInputRef.current?.showPicker?.();
+                fechaInputRef.current?.focus();
+              }}
+              className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center"
+              aria-label="Abrir calendario"
+            >
+              <img
+                src="/images/Calendario.png"
+                alt=""
+                className="h-4 w-4 object-contain"
               />
-            </div>
+            </button>
           </div>
+        </div>
 
           <div>
             <label className="mb-1 block text-xs text-gray-500">Área</label>
@@ -317,9 +336,14 @@ export default function ProyectosDashboard() {
 
         <button
           onClick={() => setShowAIModal(true)}
-          className="bg-gray-800 text-white font-semibold text-xs px-3 py-2 rounded-md hover:bg-gray-700 transition mt-3"
+          className="mt-3 flex items-center justify-center gap-2 rounded-md bg-gray-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-700"
         >
-          Buscar con IA
+          <img
+            src="/images/Buscar.png"
+            alt="Buscar con IA"
+            className="h-4 w-4 object-contain"
+          />
+          <span>Buscar con IA</span>
         </button>
 
         {/* Logo */}
@@ -352,36 +376,45 @@ export default function ProyectosDashboard() {
                 className="group cursor-pointer rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md hover:ring-1 hover:ring-[#EB0029]/40"
               >
                 <div className="mb-2 flex items-center gap-3">
-  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-[#EB0029]">
-    <FileIcon size={14} strokeWidth={2.5} className="text-white" />
-  </div>
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-[#EB0029]">
+                    <FileIcon size={14} strokeWidth={2.5} className="text-white" />
+                  </div>
 
-  <span className="truncate text-sm font-semibold text-gray-900">
-    {proyecto.nombreproyecto}
-  </span>
+                  <span className="truncate text-sm font-semibold text-gray-900">
+                    {proyecto.nombreproyecto}
+                  </span>
 
-  <button
-    type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      abrirConfirmacionEliminar(proyecto.folio);
-    }}
-    className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 text-black transition hover:border-gray-300 hover:bg-gray-100"
-    title="Eliminar proyecto"
-  >
-    <Trash2 size={16} strokeWidth={2.2} />
-  </button>
-</div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      abrirConfirmacionEliminar(proyecto.folio);
+                    }}
+                    className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 transition hover:border-gray-300 hover:bg-gray-100"
+                    title="Eliminar proyecto"
+                  >
+                    <img
+                      src="/images/BasureroA.png"
+                      alt="Eliminar proyecto"
+                      className="h-9 w-9 object-contain"
+                    />
+                  </button>
+                </div>
 
-<p className="truncate text-sm font-normal text-gray-500">
-  {proyecto.folio}
-</p>
+                <p className="truncate text-sm font-normal text-gray-500">
+                  {proyecto.folio}
+                </p>
 
                 <p className="mt-1 text-xs text-gray-500">{proyecto.departamento}</p>
 
-                <p className="mt-2 text-[11px] text-gray-400">
-                  {formatDate(proyecto.fechacreacion)}
-                </p>
+                <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-400">
+                  <img
+                    src="/images/Calendario.png"
+                    alt="Fecha de creación"
+                    className="h-3.5 w-3.5 object-contain"
+                  />
+                  <span>{formatDate(proyecto.fechacreacion)}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -389,79 +422,79 @@ export default function ProyectosDashboard() {
       </main>
 
       {folioAEliminar !== null && (
-  <div className="fixed inset-0 z-[999] flex items-center justify-center backdrop-blur-sm bg-black/30">
-    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[400px] p-7 flex flex-col items-center text-center">
-
-      <button
-        onClick={cerrarConfirmacionEliminar}
-        className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg"
-      >✕</button>
-
-      <div className="mb-5">
-        <img src="/images/Confirmacion.png" alt="Confirmación" className="w-14 h-14 object-contain" />
-      </div>
-
-      <h2 className="text-2xl font-bold text-gray-900 mb-3">¿Estás segura?</h2>
-      <p className="text-gray-500 text-sm mb-8">Este proyecto será eliminado de forma permanente. Esta acción no se puede deshacer.</p>
-
-      <div className="flex gap-3 w-full">
-        <button
-          onClick={cerrarConfirmacionEliminar}
-          disabled={eliminando}
-          className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition text-base disabled:opacity-50"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={confirmarEliminarProyecto}
-          disabled={eliminando}
-          className="flex-1 bg-[#EB0029] text-white py-3 rounded-xl font-semibold hover:opacity-90 transition text-base disabled:opacity-50"
-        >
-          {eliminando ? "Eliminando..." : "Eliminar"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-      {showAIModal && (
-      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
-        <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-          <h3 className="mb-2 text-xl font-bold text-[#EB0029]">
-            Buscar proyectos con IA
-          </h3>
-
-          <p className="mb-4 text-sm text-gray-600">
-            Escribe lo que recuerdes del proyecto. Por ejemplo: proyectos de Banorte creados en abril.
-          </p>
-
-          <textarea
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder="Ej. Busca proyectos de Banorte en abril"
-            className="h-32 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-[#EB0029]"
-          />
-
-          <div className="mt-5 flex justify-end gap-3">
-            <button
-              onClick={() => setShowAIModal(false)}
-              disabled={loadingAI}
-              className="rounded-lg bg-gray-500 px-5 py-2 text-white transition hover:bg-gray-600 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
+        <div className="fixed inset-0 z-[999] flex items-center justify-center backdrop-blur-sm bg-black/30">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[400px] p-7 flex flex-col items-center text-center">
 
             <button
-              onClick={buscarConAgente}
-              disabled={loadingAI || !aiPrompt.trim()}
-              className="rounded-lg bg-[#EB0029] px-5 py-2 text-white transition hover:bg-red-700 disabled:opacity-50"
-            >
-              {loadingAI ? "Buscando..." : "Buscar"}
-            </button>
+              onClick={cerrarConfirmacionEliminar}
+              className="absolute top-4 right-5 text-gray-400 hover:text-black text-lg"
+            >✕</button>
+
+            <div className="mb-5">
+              <img src="/images/Confirmacion.png" alt="Confirmación" className="w-14 h-14 object-contain" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">¿Estás segura?</h2>
+            <p className="text-gray-500 text-sm mb-8">Este proyecto será eliminado de forma permanente. Esta acción no se puede deshacer.</p>
+
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={cerrarConfirmacionEliminar}
+                disabled={eliminando}
+                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition text-base disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEliminarProyecto}
+                disabled={eliminando}
+                className="flex-1 bg-[#EB0029] text-white py-3 rounded-xl font-semibold hover:opacity-90 transition text-base disabled:opacity-50"
+              >
+                {eliminando ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
+
+      {showAIModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-xl font-bold text-[#EB0029]">
+              Buscar proyectos con IA
+            </h3>
+
+            <p className="mb-4 text-sm text-gray-600">
+              Escribe lo que recuerdes del proyecto. Por ejemplo: proyectos de Banorte creados en abril.
+            </p>
+
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Ej. Busca proyectos de Banorte en abril"
+              className="h-32 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-[#EB0029]"
+            />
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setShowAIModal(false)}
+                disabled={loadingAI}
+                className="rounded-lg bg-gray-500 px-5 py-2 text-white transition hover:bg-gray-600 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={buscarConAgente}
+                disabled={loadingAI || !aiPrompt.trim()}
+                className="rounded-lg bg-[#EB0029] px-5 py-2 text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {loadingAI ? "Buscando..." : "Buscar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
