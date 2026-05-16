@@ -7,10 +7,14 @@
     "titulo": "Descripción de la Iniciativa",
     "objetivo_widget": "Gestión de la descripción de la iniciativa",
     "descripcion_campos": {
-      "DESCRIPCION_INICIATIVA": "Descripción de la iniciativa"
+      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+      "titulo": "Título descriptivo de lo que representa el texto.",
+      "subtitulo": "Subtítulo"
     },
     "campos": {
-      "DESCRIPCION_INICIATIVA": null
+      "descripcion": "descripción",
+      "titulo":"Título descriptivo de lo que representa el texto.",
+      "subtitulo": "Subtítulo"
     }
   },
   {
@@ -18,15 +22,16 @@
 
     "id_widget": "w_002",
     "posicion": 2,
-    "titulo": "Objetivos y Alcance",
+    "titulo": "Título descriptivo de lo que representa el texto.",
     "objetivo_widget": "Gestión de los objetivos y alcance de la iniciativa",
     "descripcion_campos": {
-      "OBJETIVO": "Objetivo",
-      "ALCANCE": "Alcance"
     },
     "campos": {
-      "OBJETIVO": null,
-      "ALCANCE": null
+      "Titulo": "Título descriptivo de lo que representa el texto.",
+      "Seccion_1": "descripción",
+      "Seccion_1Titulo": "Subtítulo",
+      "Seccion_2": "descripción",    
+      "Seccion_2Titulo": "Subtítulo"
     }
   },
   {
@@ -42,20 +47,20 @@
       "JUSTIFICACION": "Justificación"
     },
    "campos": {
-    "titulo": "Riesgos",
+    "titulo": "Título de la tabla",
 
     "headers": [
       {
         "key": "TIPO",
-        "label": "Riesgo"
+        "label": "Columna 1"
       },
       {
         "key": "PROBABLE_PERDIDA",
-        "label": "Probable Pérdida"
+        "label": "Columna 2"
       },
       {
         "key": "JUSTIFICACION",
-        "label": "Justificación"
+        "label": "Columna 3"
       }
     ],
 
@@ -89,5 +94,19 @@
             { "etiqueta": "Categoría 2", "valor": 40 }
         ]
     }
+},
+{
+  "id_widget": "w_005",
+  "titulo": "Tabla libre",
+  "posicion": 5,        
+  "objetivo_widget": "Tabla con estructura completamente libre por filas y celdas.",
+  "descripcion_campos": {},
+  "campos": {
+    "titulo": "Tabla",
+    "filas": [
+      { "celdas": [{ "valor": "Celda 1", "colspan": 1 }, { "valor": "Celda 2", "colspan": 1 }] },
+      { "celdas": [{ "valor": "Fila 2 completa", "colspan": 2 }] }
+    ]
+  }
 }
 ]
