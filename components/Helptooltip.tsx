@@ -67,29 +67,19 @@ export default function HelpTooltip({ text, position = "top" }: HelpTooltipProps
         onClick={toggle}
         aria-label="Ayuda"
         type="button"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "18px",
-          height: "18px",
-          borderRadius: "50%",
-          border: "1.5px solid",
-          borderColor: visible ? "#3b82f6" : "#94a3b8",
-          background: visible ? "#eff6ff" : "transparent",
-          color: visible ? "#3b82f6" : "#94a3b8",
-          fontSize: "11px",
-          fontWeight: "700",
-          fontFamily: "Georgia, serif",
-          cursor: "pointer",
-          padding: 0,
-          lineHeight: 1,
-          transition: "all 0.15s ease",
-          flexShrink: 0,
-          outline: "none",
-        }}
+        className="group inline-flex h-[28px] w-[28px] shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 outline-none"
       >
-        ?
+        <img
+          src="/images/Info.png"
+          alt="Ayuda"
+          className="block h-[28px] w-[28px] object-contain group-hover:hidden"
+        />
+
+        <img
+          src="/images/InfoHover.png"
+          alt="Ayuda"
+          className="hidden h-[28px] w-[28px] object-contain group-hover:block"
+        />
       </button>
 
       {visible && (

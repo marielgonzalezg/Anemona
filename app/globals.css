@@ -31,3 +31,6 @@ body {
   opacity: 1;
 }
 
+.custom-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
