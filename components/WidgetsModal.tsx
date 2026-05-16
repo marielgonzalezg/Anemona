@@ -8,6 +8,8 @@ import {
   renderW001,
   renderW002,
   renderW003,
+  renderW005,  
+
 
   Widget,
 } from "./widgets/BibliotecaWidgets";
@@ -32,6 +34,7 @@ function renderWidgetNode(
     case "w_002": return renderW002(w, onChange);
     case "w_003": return renderW003(w, onChange);
     case "w_004": return renderWChart(w, onChange);
+    case "w_005": return renderW005(w, onChange);
     default: return <div className="text-[13px] italic text-gray-400">Widget no reconocido: {w.id_widget}</div>;
   }
 }

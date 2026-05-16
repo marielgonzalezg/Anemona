@@ -5,6 +5,7 @@ import {
   renderW001,
   renderW002,
   renderW003,
+  renderW005,
   Widget,
 } from "./widgets/BibliotecaWidgets";
 import { API_URL } from "@/services/api";
@@ -107,6 +108,9 @@ const WidgetRenderer: React.FC<Props> = ({
         return renderW003(widget, handleChange, highlight); //
       case "w_004":
         return renderWChart(widget, handleChange); //
+      case "w_005": 
+        return renderW005(widget, handleChange, highlight);
+
       default:
         return null;
     }
