@@ -388,7 +388,7 @@ const renderW005Partial = (widget: Widget, filas: any[], showTitle: boolean) => 
         <button
           onClick={handleSave}
           disabled={loading}
-          className="bg-[#EB0029] text-white px-6 py-2 rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition disabled:opacity-60"
         >
           {loading ? "Guardando..." : "Guardar cambios"}
         </button>
