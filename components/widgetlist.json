@@ -96,6 +96,7 @@
     }
 },
 {
+  "info": "Tabla libre: utiliza este widget cuando necesitas una tabla flexible donde cada fila puede tener diferente número de celdas. Puedes agregar filas con el botón +, agregar o quitar celdas con las flechas laterales y eliminar filas con la X roja. Es ideal para requerimientos de negocio, información regulatoria, responsables, fechas, periodicidad o cualquier sección que no tenga una estructura fija.",
   "id_widget": "w_005",
   "titulo": "Tabla libre",
   "posicion": 5,        
