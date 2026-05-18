@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
-import { RefreshCw, Loader2, Download, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
+import { RefreshCw, Loader2, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
 import { API_URL } from "@/services/api";
 
 interface Nodo { id: string; label: string; tipo?: string; x?: number; y?: number; }
@@ -76,7 +76,6 @@ const ROW_LANE_GAP = 64;
 const PAD = 40;
 const ICON_SIZE = 18;
 const LANE_COLS = 2;
-// Fixed extra whitespace so nodes have room to be dragged anywhere
 const EXTRA = 600;
 
 const LANE_GROUPS: { key: string; label: string; types: string[] }[] = [
@@ -146,11 +145,9 @@ function buildLaneLayout(rawNodes: Nodo[], edges: Arista[]) {
   laneRows.forEach((row) => row.forEach((lane, col) => { colWidths[col] = Math.max(colWidths[col], lane.intrinsicW); }));
   const rowHeights = laneRows.map((row) => Math.max(...row.map((l) => l.intrinsicH)));
 
-  // Tight layout size
   const layoutW = PAD * 2 + colWidths.reduce((a, b) => a + b, 0) + (LANE_COLS - 1) * LANE_GAP;
   const layoutH = PAD * 2 + rowHeights.reduce((a, b) => a + b, 0) + (numRows - 1) * ROW_LANE_GAP;
 
-  // Canvas is much bigger — fixed, never changes — gives free drag space
   const totalW = layoutW + EXTRA;
   const totalH = layoutH + EXTRA;
 
@@ -280,7 +277,6 @@ function Diagram({ nodes: rawNodes, edges, svgRef }: DiagramProps) {
     return () => document.removeEventListener("fullscreenchange", onFsc);
   }, []);
 
-  // Fit zoom: scale against the tight layout area (excluding EXTRA whitespace)
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const layoutW = layout.totalW - EXTRA;
   const layoutH = layout.totalH - EXTRA;
@@ -293,11 +289,8 @@ function Diagram({ nodes: rawNodes, edges, svgRef }: DiagramProps) {
     const scaleY = clientHeight / layoutH;
     const z = Math.min(scaleX, scaleY, 1.5) * 0.9;
     setZoom(z);
-    // After zoom state settles, scroll so the layout area is centered
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        // Layout starts at PAD inside the totalW/totalH canvas
-        // Center of the tight layout in scaled pixels:
         const centerX = (PAD + layoutW / 2) * z;
         const centerY = (PAD + layoutH / 2) * z;
         el.scrollTo({
@@ -309,7 +302,6 @@ function Diagram({ nodes: rawNodes, edges, svgRef }: DiagramProps) {
     });
   }, [layoutW, layoutH]);
 
-  // Auto-fit on first load
   const didFit = useRef(false);
   useEffect(() => {
     if (!didFit.current) {
@@ -340,7 +332,6 @@ function Diagram({ nodes: rawNodes, edges, svgRef }: DiagramProps) {
     pt.x = e.clientX; pt.y = e.clientY;
     const sp = pt.matrixTransform(svgRef.current!.getScreenCTM()!.inverse());
     const { id, ox, oy } = dragging.current;
-    // Free movement — only keep node inside the fixed canvas bounds
     const nx = Math.max(0, Math.min(totalW - NODE_W, sp.x - ox));
     const ny = Math.max(0, Math.min(totalH - NODE_H, sp.y - oy));
     positionsRef.current[id] = { x: nx, y: ny };
@@ -366,7 +357,7 @@ function Diagram({ nodes: rawNodes, edges, svgRef }: DiagramProps) {
         <span className="text-[10px] text-gray-400">· Arrastra nodos libremente</span>
       </div>
 
-      {/* Scrollable canvas — always overflow-auto, zoom via explicit pixel size */}
+      {/* Scrollable canvas */}
       <div ref={scrollRef} className="flex-1 overflow-auto bg-white">
         <svg
           ref={svgRef}
@@ -481,14 +472,28 @@ function Diagram({ nodes: rawNodes, edges, svgRef }: DiagramProps) {
   );
 }
 
-export default function ArquitecturaDiagram() {
+// ─── Prop para registrar la función de descarga en el padre ──────────────────
+export default function ArquitecturaDiagram({
+  onRegisterDownload,
+}: {
+  onRegisterDownload?: (fn: () => Promise<void>) => void;
+} = {}) {
   const [data, setData] = useState<ArquitecturaData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Registrar la función de descarga PDF en el padre cuando esté disponible
+  useEffect(() => {
+    if (!onRegisterDownload) return;
+    onRegisterDownload(async () => {
+      if (!svgRef.current) return;
+      try { await downloadAsPDF(svgRef.current, "arquitectura.pdf"); }
+      catch (e: any) { console.error("Error al generar PDF:", e.message); }
+    });
+  }, [onRegisterDownload]);
 
   const getIds = () => ({ projectId: typeof window !== "undefined" ? sessionStorage.getItem("project_id") ?? "" : "" });
 
@@ -541,14 +546,6 @@ export default function ArquitecturaDiagram() {
     } catch (e: any) { setError(e.message); setGenerating(false); }
   };
 
-  const handleDownloadPDF = async () => {
-    if (!svgRef.current) return;
-    setDownloading(true); setError(null);
-    try { await downloadAsPDF(svgRef.current, "arquitectura.pdf"); }
-    catch (e: any) { setError("Error al generar PDF: " + e.message); }
-    finally { setDownloading(false); }
-  };
-
   const isEmpty = !data || (data.nodes.length === 0 && data.edges.length === 0);
 
   return (
@@ -556,15 +553,11 @@ export default function ArquitecturaDiagram() {
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Diagrama de arquitectura</span>
         <div className="flex items-center gap-2">
-          {!isEmpty && (
-            <button onClick={handleDownloadPDF} disabled={downloading}
-              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm transition hover:bg-gray-50 hover:border-gray-300 disabled:opacity-60">
-              {downloading ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
-              {downloading ? "Generando…" : "PDF"}
-            </button>
-          )}
-          <button onClick={handleGenerar} disabled={generating}
-            className="flex items-center gap-1.5 rounded-full bg-[#EB0029] px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-[#c8001f] disabled:opacity-60">
+          <button
+            onClick={handleGenerar}
+            disabled={generating}
+            className="flex items-center gap-1.5 bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition disabled:opacity-60"
+          >
             {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
             {generating ? "Generando…" : "Generar arquitectura"}
           </button>
@@ -594,7 +587,7 @@ export default function ArquitecturaDiagram() {
             </div>
           </div>
         )}
-      </div> 
+      </div>
     </div>
   );
 }
