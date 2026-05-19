@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 /* ================== TYPES ================== */
 
 export type Widget = {
@@ -208,7 +207,7 @@ export const renderW001 = (
               "Descripción general de la iniciativa y justificación"
             }
             onChange={(e) => onChange(widget.posicion, "titulo", e.target.value)}
-            className={`bg-transparent outline-none font-bold w-full ${highlight(`${widget.posicion}.campos.titulo`)}`}
+            className={`bg-transparent outline-none font-bold w-full text-[18px] ${highlight(`${widget.posicion}.campos.titulo`)}`}
           />
         }
         note="(Opcional)"
@@ -264,7 +263,7 @@ export const renderW002 = (
           <input
             value={campos.Titulo || "Objetivos de la iniciativa"}
             onChange={(e) => onChange(widget.posicion, "Titulo", e.target.value)}
-            className={`bg-transparent outline-none font-bold w-full ${highlight(`${widget.posicion}.campos.Titulo`)}`}
+            className={`bg-transparent outline-none font-bold w-full text-[18px] ${highlight(`${widget.posicion}.campos.Titulo`)}`}
           />
         }
         note="(Opcional)"
@@ -637,3 +636,225 @@ export const renderW005 = (
     </div>
   );
 };
+
+/* ================== W006 ================== */
+
+export type Block = {
+  id: string;
+  tipo: "subtitulo" | "parrafo";
+  texto: string;
+};
+
+function genId() {
+  return Math.random().toString(36).slice(2, 8);
+}
+
+type BlockRowProps = {
+  block: Block;
+  total: number;
+  onChange: (id: string, field: keyof Block, value: string) => void;
+  onToggleTipo: (id: string) => void;
+  onEnter: (id: string) => void;
+  onDelete: (id: string) => void;
+  focusRef?: React.RefObject<HTMLTextAreaElement | null>;
+};
+
+const BlockRow = ({
+  block,
+  total,
+  onChange,
+  onToggleTipo,
+  onEnter,
+  onDelete,
+  focusRef,
+}: BlockRowProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const ref = focusRef ?? textareaRef;
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = "auto";
+      ref.current.style.height = ref.current.scrollHeight + "px";
+    }
+  }, [block.texto]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+      e.preventDefault();
+      onToggleTipo(block.id);
+      return;
+    }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onEnter(block.id);
+      return;
+    }
+    if (e.key === "Backspace" && block.texto === "" && total > 1) {
+      e.preventDefault();
+      onDelete(block.id);
+      return;
+    }
+  };
+
+  const isSubtitle = block.tipo === "subtitulo";
+
+  return (
+    <div className="group/block relative">
+      <div className="flex items-start gap-2">
+
+        <textarea
+          ref={ref}
+          value={block.texto}
+          onChange={(e) => {
+            onChange(block.id, "texto", e.target.value);
+            if (ref.current) {
+              ref.current.style.height = "auto";
+              ref.current.style.height = ref.current.scrollHeight + "px";
+            }
+          }}
+          onKeyDown={handleKeyDown}
+          rows={1}
+          placeholder={isSubtitle ? "Subtítulo..." : "Párrafo..."}
+          className={`flex-1 bg-transparent outline-none resize-none overflow-hidden leading-snug placeholder:text-gray-300 ${
+            isSubtitle
+              ? "font-bold text-[14px] text-black"
+              : "text-[13px] italic text-[#1d5da8]"
+          }`}
+        />
+      </div>
+
+      <div className="h-2" />
+    </div>
+  );
+};
+
+/* Este es el componente real con hooks */
+type W006Props = {
+  widget: Widget;
+  onChange: (posicion: number, key: string, value: any) => void;
+  highlight?: (path: string) => string;
+  showHints?: boolean;
+};
+
+export const W006 = ({
+  widget,
+  onChange,
+  highlight = () => "",
+  showHints = false,
+}: W006Props) => {
+  const campos = widget.campos || {};
+  const bloques: Block[] = campos.bloques?.length
+    ? campos.bloques
+    : [{ id: genId(), tipo: "parrafo", texto: "" }];
+
+  const pendingFocusId = useRef<string | null>(null);
+  const blockRefs = useRef<Record<string, React.RefObject<HTMLTextAreaElement | null>>>({});
+
+  bloques.forEach((b) => {
+    if (!blockRefs.current[b.id]) {
+      blockRefs.current[b.id] = React.createRef<HTMLTextAreaElement>();
+    }
+  });
+
+  useEffect(() => {
+    if (pendingFocusId.current) {
+      const ref = blockRefs.current[pendingFocusId.current];
+      if (ref?.current) {
+        ref.current.focus();
+        const len = ref.current.value.length;
+        ref.current.setSelectionRange(len, len);
+      }
+      pendingFocusId.current = null;
+    }
+  });
+
+  const handleBlockChange = (id: string, field: keyof Block, value: string) => {
+    const newBloques = bloques.map((b) => (b.id === id ? { ...b, [field]: value } : b));
+    onChange(widget.posicion, "bloques", newBloques);
+  };
+
+  const handleToggleTipo = (id: string) => {
+    const newBloques = bloques.map((b) =>
+      b.id === id ? { ...b, tipo: b.tipo === "subtitulo" ? "parrafo" : "subtitulo" } : b
+    ) as Block[];
+    onChange(widget.posicion, "bloques", newBloques);
+  };
+
+  const handleEnter = (afterId: string) => {
+    const idx = bloques.findIndex((b) => b.id === afterId);
+    const newId = genId();
+    const newBloques = [
+      ...bloques.slice(0, idx + 1),
+      { id: newId, tipo: "parrafo" as const, texto: "" },
+      ...bloques.slice(idx + 1),
+    ];
+    blockRefs.current[newId] = React.createRef<HTMLTextAreaElement>();
+    pendingFocusId.current = newId;
+    onChange(widget.posicion, "bloques", newBloques);
+  };
+
+  const handleDelete = (id: string) => {
+    if (bloques.length <= 1) return;
+    const idx = bloques.findIndex((b) => b.id === id);
+    const prevId = bloques[Math.max(0, idx - 1)]?.id;
+    const newBloques = bloques.filter((b) => b.id !== id);
+    delete blockRefs.current[id];
+    pendingFocusId.current = prevId ?? null;
+    onChange(widget.posicion, "bloques", newBloques);
+  };
+  
+  return (
+    <div className="mb-8">
+      <SectionLine
+        number={`${widget.posicion}.`}
+        title={
+          <input
+            value={campos.titulo || widget.titulo || "Título de la sección"}
+            onChange={(e) => onChange(widget.posicion, "titulo", e.target.value)}
+            className={`bg-transparent outline-none font-bold w-full text-[18px] ${highlight(`${widget.posicion}.campos.titulo`)}`}
+          />
+        }
+        note="(Opcional)"
+        noteColor="text-red-600"
+      />
+
+      {showHints && (
+  <div className="text-[10px] text-gray-400 mb-3 select-none">
+    <span className="mr-3">⏎ nuevo párrafo</span>
+    <span className="mr-3">⌘B subtítulo</span>
+    <span>⌫ borrar bloque vacío</span>
+  </div>
+)}
+
+      <div className="flex flex-col">
+        {bloques.map((block) => (
+          <BlockRow
+            key={block.id}
+            block={block}
+            total={bloques.length}
+            onChange={handleBlockChange}
+            onToggleTipo={handleToggleTipo}
+            onEnter={handleEnter}
+            onDelete={handleDelete}
+            focusRef={blockRefs.current[block.id]}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* Wrapper para mantener la misma firma que los demás render* */
+export const renderW006 = (
+  widget: Widget,
+  onChange: (posicion: number, key: string, value: any) => void,
+  highlight: (path: string) => string = () => "",
+  showHints: boolean = false
+) => (
+  <W006
+    widget={widget}
+    onChange={onChange}
+    highlight={highlight}
+    showHints={showHints}
+  />
+);

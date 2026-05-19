@@ -9,8 +9,7 @@ import {
   renderW002,
   renderW003,
   renderW005,  
-
-
+  renderW006,
   Widget,
 } from "./widgets/BibliotecaWidgets";
 import { API_URL } from "@/services/api";
@@ -26,7 +25,7 @@ type WidgetsModalProps = {
 
 function renderWidgetNode(
   w: Widget,
-  onChange: (posicion: number, key: string, value: string) => void
+  onChange: (posicion: number, key: string, value: any) => void
 ) {
   switch (w.id_widget) {
     case "w_000": return renderW000(w, onChange);
@@ -35,6 +34,7 @@ function renderWidgetNode(
     case "w_003": return renderW003(w, onChange);
     case "w_004": return renderWChart(w, onChange);
     case "w_005": return renderW005(w, onChange);
+    case "w_006": return renderW006(w, onChange, () => "", true);
     default: return <div className="text-[13px] italic text-gray-400">Widget no reconocido: {w.id_widget}</div>;
   }
 }
@@ -141,7 +141,23 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
     setSaving(true);
     try {
 
-      const payload = docWidgets.map(({ _isNew, ...w }) => w);
+      const payload = docWidgets.map(({ _isNew, ...w }) => {
+  if (w.id_widget !== "w_006") return w;
+
+  const bloquesLimpios = Array.isArray(w.campos?.bloques)
+    ? w.campos.bloques.filter((bloque: any) => {
+        return String(bloque?.texto ?? "").trim() !== "";
+      })
+    : [];
+
+  return {
+    ...w,
+    campos: {
+      ...w.campos,
+      bloques: bloquesLimpios,
+    },
+  };
+});
       console.log("💾 GUARDANDO PLANTILLA:");
       console.log(JSON.stringify(payload, null, 2)); // <- usa payload
 
@@ -156,7 +172,12 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
 
       if (!res.ok) throw new Error("Error al guardar");
 
-      setDocWidgets((prev) => prev.map(w => ({ ...w, _isNew: false })));
+      setDocWidgets(
+  payload.map((w) => ({
+    ...w,
+    _isNew: false,
+  }))
+);
 
 
       // Al guardar exitosamente, quita el resaltado amarillo
