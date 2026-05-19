@@ -57,17 +57,17 @@ export default function FormModal({
   const [submittingProject, setSubmittingProject] = useState(false); // <- nuevo estado para controlar el envío del proyecto
 
   function toggleDepartamento(id: string) { // función para agregar o quitar departamentos del array
-  setFormData((prev) => {
-    const yaExiste = prev.departamentos.includes(id);
+    setFormData((prev) => {
+      const yaExiste = prev.departamentos.includes(id);
 
-    return {
-      ...prev,
-      departamentos: yaExiste
-        ? prev.departamentos.filter((depId) => depId !== id)
-        : [...prev.departamentos, id],
-    };
-  });
-}
+      return {
+        ...prev,
+        departamentos: yaExiste
+          ? prev.departamentos.filter((depId) => depId !== id)
+          : [...prev.departamentos, id],
+      };
+    });
+  }
 
   useEffect(() => {
     async function fetchDepartamentos() {
@@ -96,27 +96,27 @@ export default function FormModal({
 
   // Auto llenado de campos solicitante y contacto con la info del usuario logueado, si está disponible
   useEffect(() => {
-  if (!isOpen || typeof window === "undefined") return;
+    if (!isOpen || typeof window === "undefined") return;
 
-  const nombre = localStorage.getItem("nombre") || "";
-  const apellidopaterno = localStorage.getItem("apellidopaterno") || "";
-  const apellidomaterno = localStorage.getItem("apellidomaterno") || "";
-  const correo = localStorage.getItem("correo") || "";
-  const idusuario = localStorage.getItem("idusuario") || tempUserId || "";
+    const nombre = localStorage.getItem("nombre") || "";
+    const apellidopaterno = localStorage.getItem("apellidopaterno") || "";
+    const apellidomaterno = localStorage.getItem("apellidomaterno") || "";
+    const correo = localStorage.getItem("correo") || "";
+    const idusuario = localStorage.getItem("idusuario") || tempUserId || "";
 
-  const nombreCompleto = [nombre, apellidopaterno, apellidomaterno]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+    const nombreCompleto = [nombre, apellidopaterno, apellidomaterno]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
-  setFormData((prev) => ({
-    ...prev,
-    solicitante: nombreCompleto,
-    contacto: correo,
-  }));
+    setFormData((prev) => ({
+      ...prev,
+      solicitante: nombreCompleto,
+      contacto: correo,
+    }));
 
-  setTempUserId(idusuario);
-}, [isOpen, tempUserId, setTempUserId]);
+    setTempUserId(idusuario);
+  }, [isOpen, tempUserId, setTempUserId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -174,19 +174,19 @@ export default function FormModal({
         key: "iniciativa",
         placeholder: "Sistema de ...",
       },
-      
+
     ];
 
   const isFormValid =
-  formData.solicitante.trim() !== "" &&
-  formData.dga.trim() !== "" &&
-  formData.contacto.trim() !== "" &&
-  formData.patrocinador.trim() !== "" &&
-  formData.socio.trim() !== "" &&
-  formData.cr.trim() !== "" &&
-  formData.iniciativa.trim() !== "" &&
-  formData.departamentos.length > 0 &&
-  formData.tipo.trim() !== "";
+    formData.solicitante.trim() !== "" &&
+    formData.dga.trim() !== "" &&
+    formData.contacto.trim() !== "" &&
+    formData.patrocinador.trim() !== "" &&
+    formData.socio.trim() !== "" &&
+    formData.cr.trim() !== "" &&
+    formData.iniciativa.trim() !== "" &&
+    formData.departamentos.length > 0 &&
+    formData.tipo.trim() !== "";
 
   function handleChange(key: keyof FormDataType, value: string) {
     setFormData((prev) => ({
@@ -228,312 +228,304 @@ export default function FormModal({
           usuario_id: tempUserId || localStorage.getItem("idusuario") || null,
         },
         plantilla: [{
-    posicion: 0,
-    id_widget: "w_000",
-    titulo: "Datos generales de la iniciativa",
-    objetivo_widget: "Capturar la información general y administrativa de la iniciativa.",
-    descripcion_campos: {
-      SOLICITANTE: "Solicitante",
-      INFO_CONTACTO: "Información de contacto",
-      DGA: "Dirección General Adjunta",
-      PATROCINADOR: "Patrocinador",
-      CR: "Centro de Responsabilidad",
-      SOCIO: "Nombre del Socio de Negocio",
-      NOMBRE_INICIATIVA: "Nombre de la iniciativa",
-      TIPO_INICIATIVA: "Tipo de la iniciativa",
-    },
-    campos: {
-      SOLICITANTE: null,
-      INFO_CONTACTO: null,
-      DGA: null,
-      PATROCINADOR: null,
-      CR: null,
-      SOCIO: null,
-      NOMBRE_INICIATIVA: null,
-      TIPO_INICIATIVA: null,
-    },
-  },
-{
-  id_widget: "w_006",
-  posicion: 1,        
-  titulo: "Descripción de la iniciativa",
-  objetivo_widget: "Describir de manera general la iniciativa, su propósito y contexto.",
-  descripcion_campos: {
-    descripcion_campos: {
-      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "tipo": "subtitulo o parrado, dependiendo de comman b ",
-      "texto": "lo que se escribe dentro de este parrafo o subtitulo"
-    },
-  },
-  campos: {
-    "titulo": "Descripción de la iniciativa",
-    "bloques": [
-      {
-        "id": "bloque_1",
-        "tipo": "subtitulo",
-        "texto": "Descripción general de la iniciativa"
-      },
-      {
-        "id": "bloque_2",
-        "tipo": "parrafo",
-        "texto": " "
-      }
-    ]
-  },
-},
-  {
-  id_widget: "w_006",
-  posicion: 2,        
-  titulo: "Objetivos y alcance",
-  objetivo_widget: "Definir el objetivo principal y el alcance de la iniciativa.",
-  descripcion_campos: {
-    descripcion_campos: {},
-  },
-  campos: {
-    "titulo": "Descripción de la iniciativa",
-    "bloques": [
-      {
-        "id": "bloque_1",
-        "tipo": "subtitulo",
-        "texto": "Objetivo"
-      },
-      {
-        "id": "bloque_2",
-        "tipo": "parrafo",
-        "texto": " ", 
-      },
-      {
-        "id": "bloque_3",
-        "tipo": "subtitulo",
-        "texto": "Alcance"
-      },
-      {
-        "id": "bloque_4",
-        "tipo": "parrafo",
-        "texto": " "
-      }
-    ]
-  },
-},
-   {
-    //// DONE 
-    id_widget: "w_003",
-    posicion: 3,
-    titulo: "Areas impactadas",
-    objetivo_widget: "Identificar las áreas de la organización que serán impactadas.",
-    descripcion_campos: {
-      filas: "Listado de areas de negocio, que procesos la impactan y la descripcion del impacto",
-      AREA_NEGOCIO: "El area del negocio",
-      IMPACTOS: "el tipo de proceso y como impactan al area",
-    },
-    campos: {
-      filas: 
-      [
-        { AREA_NEGOCIO: "Área de negocio", IMPACTOS: "Proceso o actividad impactada"},
-      ],
-    },
-  },
-   {
-    "posicion": 4,
-    "id_widget": "w_005",
-    "titulo": "Requerimientos de Negocio",
-    "objetivo_widget": "Eres responsable de gestionar este widget de tabla libre para capturar los requerimientos de negocio. Cada fila es independiente y puede tener diferente número de celdas que se distribuyen equitativamente. CAMPO 'filas' (OBLIGATORIO): Array de objetos donde cada uno tiene 'celdas': array de objetos con 'valor' (string, contenido principal), 'label' (string opcional, texto pequeño gris encima del valor), 'bold' (boolean opcional). CAMPO 'titulo' (OBLIGATORIO): Título de la sección. REGLA: Las celdas de cada fila se distribuyen equitativamente en el ancho de forma automática. Solo escribe dentro de campos.",
-    "descripcion_campos": {
-      "titulo": "Título de la sección.",
-      "filas": "Array de filas independientes. Cada fila tiene 'celdas': array de objetos con 'valor' (string), 'label' (string opcional, aparece pequeño encima del valor), 'bold' (boolean opcional). Las celdas se dividen el ancho equitativamente de forma automática por fila."
-    },
-    "campos": {
-      "titulo": "Requerimientos de Negocio",
-      "filas": [
-        { "celdas": [{ "valor": "tablaFR", "bold": true }] },
-        { "celdas": [
-            { "label": "Área participante", "valor": "" },
-            { "label": "N/A", "valor": "" },
-            { "label": "Responsable", "valor": "" },
-            { "label": "N/A", "valor": "" }
-        ]},
-        { "celdas": [{ "valor": "En caso de ser un requerimiento Regulatorio.", "bold": true }  ]},
-        { "celdas": [
-          { "label": "Autoridad que solicita la regulación o cambio.", "valor": "" },
-          { "label": "por definir", "valor": "" }
-        ]},
+          posicion: 0,
+          id_widget: "w_000",
+          titulo: "Datos generales de la iniciativa",
+          objetivo_widget: "Capturar la información general y administrativa de la iniciativa.",
+          descripcion_campos: {
+            SOLICITANTE: "Solicitante",
+            INFO_CONTACTO: "Información de contacto",
+            DGA: "Dirección General Adjunta",
+            PATROCINADOR: "Patrocinador",
+            CR: "Centro de Responsabilidad",
+            SOCIO: "Nombre del Socio de Negocio",
+            NOMBRE_INICIATIVA: "Nombre de la iniciativa",
+            TIPO_INICIATIVA: "Tipo de la iniciativa",
+          },
+          campos: {
+            SOLICITANTE: null,
+            INFO_CONTACTO: null,
+            DGA: null,
+            PATROCINADOR: null,
+            CR: null,
+            SOCIO: null,
+            NOMBRE_INICIATIVA: null,
+            TIPO_INICIATIVA: null,
+          },
+        },
+          {
+            id_widget: "w_006",
+            posicion: 1,
+            titulo: "Descripción de la iniciativa",
+            objetivo_widget: "Describir de manera general la iniciativa, su propósito y contexto.",
+            descripcion_campos: {
+                descripcion: "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+                tipo: "Tipo de bloque. Puede ser 'subtitulo' o 'parrafo'.",
+                texto: "Contenido visible del bloque."
+          },
+          campos: {
+            "titulo": "Descripción de la iniciativa",
+            "bloques": [
+              {
+                "id": "bloque_1",
+                "tipo": "subtitulo",
+                "texto": "Descripción general de la iniciativa"
+              },
+              {
+                "id": "bloque_2",
+                "tipo": "parrafo",
+                "texto": " "
+              }
+            ]
+          },
+        },
+        {
+          id_widget: "w_006",
+          posicion: 2,
+          titulo: "Objetivos y alcance",
+          objetivo_widget: "Definir el objetivo principal y el alcance de la iniciativa.",
+          descripcion_campos: {
+          },
+          campos: {
+            "titulo": "Descripción de la iniciativa",
+            "bloques": [
+              {
+                "id": "bloque_1",
+                "tipo": "subtitulo",
+                "texto": "Objetivo"
+              },
+              {
+                "id": "bloque_2",
+                "tipo": "subtitulo",
+                "texto": "Alcance"
+              },
+            ]
+          },
+        },
+        {
+          //// DONE 
+          id_widget: "w_003",
+          posicion: 3,
+          titulo: "Areas impactadas",
+          objetivo_widget: "Identificar las áreas de la organización que serán impactadas.",
+          descripcion_campos: {
+            filas: "Listado de areas de negocio, que procesos la impactan y la descripcion del impacto",
+            AREA_NEGOCIO: "El area del negocio",
+            IMPACTOS: "el tipo de proceso y como impactan al area",
+          },
+          campos: {
+            filas:
+              [
+                { AREA_NEGOCIO: "Área de negocio", IMPACTOS: "Proceso o actividad impactada" },
+              ],
+          },
+        },
+        {
+          "posicion": 4,
+          "id_widget": "w_005",
+          "titulo": "Requerimientos de Negocio",
+          "objetivo_widget": "Eres responsable de gestionar este widget de tabla libre para capturar los requerimientos de negocio. Cada fila es independiente y puede tener diferente número de celdas que se distribuyen equitativamente. CAMPO 'filas' (OBLIGATORIO): Array de objetos donde cada uno tiene 'celdas': array de objetos con 'valor' (string, contenido principal), 'label' (string opcional, texto pequeño gris encima del valor), 'bold' (boolean opcional). CAMPO 'titulo' (OBLIGATORIO): Título de la sección. REGLA: Las celdas de cada fila se distribuyen equitativamente en el ancho de forma automática. Solo escribe dentro de campos.",
+          "descripcion_campos": {
+            "titulo": "Título de la sección.",
+            "filas": "Array de filas independientes. Cada fila tiene 'celdas': array de objetos con 'valor' (string), 'label' (string opcional, aparece pequeño encima del valor), 'bold' (boolean opcional). Las celdas se dividen el ancho equitativamente de forma automática por fila."
+          },
+          "campos": {
+            "titulo": "Requerimientos de Negocio",
+            "filas": [
+              { "celdas": [{ "valor": "tablaFR", "bold": true }] },
+              {
+                "celdas": [
+                  { "label": "Área participante", "valor": "" },
+                  { "label": "N/A", "valor": "" },
+                  { "label": "Responsable", "valor": "" },
+                  { "label": "N/A", "valor": "" }
+                ]
+              },
+              { "celdas": [{ "valor": "En caso de ser un requerimiento Regulatorio.", "bold": true }] },
+              {
+                "celdas": [
+                  { "label": "Autoridad que solicita la regulación o cambio.", "valor": "" },
+                  { "label": "por definir", "valor": "" }
+                ]
+              },
 
-        { "celdas": [{ "label": "Fecha de emisión de la regulación.", "valor": "" },
-          { "label": "NA", "valor": "" }
-        ]},
-        { "celdas": [{ "label": "Fecha de recepción de la regulación por parte de GFNorte.", "valor": "" },
-          { "label": "N/A", "valor": "" }]},
-        { "celdas": [{ "label": "Fecha de entrada en vigor de la regulación.", "valor": "" },
-          { "label": "N/A", "valor": "" }
-        ]},
-        { "celdas": [{ "label": "Monto posible de la sanción (Multa).", "valor": "" },
-          { "label": "0", "valor": "" }
-        ]},
-        { "celdas": [{ "label": "Aplicativos (sistemas) que se ven impactados.", "valor": "" },
-          { "label": "N/A", "valor": "" }
-        ]},
+              {
+                "celdas": [{ "label": "Fecha de emisión de la regulación.", "valor": "" },
+                { "label": "NA", "valor": "" }
+                ]
+              },
+              {
+                "celdas": [{ "label": "Fecha de recepción de la regulación por parte de GFNorte.", "valor": "" },
+                { "label": "N/A", "valor": "" }]
+              },
+              {
+                "celdas": [{ "label": "Fecha de entrada en vigor de la regulación.", "valor": "" },
+                { "label": "N/A", "valor": "" }
+                ]
+              },
+              {
+                "celdas": [{ "label": "Monto posible de la sanción (Multa).", "valor": "" },
+                { "label": "0", "valor": "" }
+                ]
+              },
+              {
+                "celdas": [{ "label": "Aplicativos (sistemas) que se ven impactados.", "valor": "" },
+                { "label": "N/A", "valor": "" }
+                ]
+              },
 
-        { "celdas": [{ "valor": "En caso de no ser requerimiento Regulatorio.", "bold": true }] },
-        { "celdas": [
-            { "label": "Es urgente", "valor": "" },
-            { "label": "Fecha límite de la Urgencia", "valor": "" }
-        ]},
-        { "celdas": [{ "valor": "En caso de ser un requerimiento Periódico.", "bold": true }] },
-        { "celdas": [{ "label": "Periodicidad", "valor": "" }]}, 
-        { "celdas": [{ "label": "Fechas requeridas de entrega", "valor": "" }]} 
-      ]
-    }
-  },
-  {
-  id_widget: "w_006",
-  posicion: 5,        
-  titulo: "Beneficios",
-  objetivo_widget: "Identificar beneficios adicionales derivados de la iniciativa.",
-  descripcion_campos: {
-    descripcion_campos: {},
-  },
-  campos: {
-    "titulo": "Beneficios",
-    "bloques": [
-      {
-        "id": "bloque_1",
-        "tipo": "subtitulo",
-        "texto": "Otros Beneficios"
-      },
-      {
-        "id": "bloque_2",
-        "tipo": "parrafo",
-        "texto": " "
-      }
-    ]
-  },
-},
-{
-  id_widget: "w_006",
-  posicion: 6,        
-  titulo: "Participación de otras áreas",
-  objetivo_widget: "Registrar la participación de otras áreas en la iniciativa.",
-  descripcion_campos: {
-      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-    },
-  campos: {
-    "titulo": "Participación de otras áreas",
-    "bloques": [ {
-        "id": "bloque_1",
-        "tipo": "parrafo",
-        "texto": " "
-      }]
-  },
-},
-  {
-  id_widget: "w_003",
-  posicion: 7,
-  titulo: "Riesgos",
-  objetivo_widget:
-    "Eres responsable de gestionar este widget de identificación de riesgos del proyecto. Se renderiza como una tabla dinámica donde campos.headers define las columnas y campos.filas contiene los datos.",
+              { "celdas": [{ "valor": "En caso de no ser requerimiento Regulatorio.", "bold": true }] },
+              {
+                "celdas": [
+                  { "label": "Es urgente", "valor": "" },
+                  { "label": "Fecha límite de la Urgencia", "valor": "" }
+                ]
+              },
+              { "celdas": [{ "valor": "En caso de ser un requerimiento Periódico.", "bold": true }] },
+              { "celdas": [{ "label": "Periodicidad", "valor": "" }] },
+              { "celdas": [{ "label": "Fechas requeridas de entrega", "valor": "" }] }
+            ]
+          }
+        },
+        {
+          id_widget: "w_006",
+          posicion: 5,
+          titulo: "Beneficios",
+          objetivo_widget: "Identificar beneficios adicionales derivados de la iniciativa.",
+          descripcion_campos: {
+          },
+          campos: {
+            "titulo": "Beneficios",
+            "bloques": [
+              {
+                "id": "bloque_1",
+                "tipo": "subtitulo",
+                "texto": "Otros Beneficios"
+              },
+            ]
+          },
+        },
+        {
+          id_widget: "w_006",
+          posicion: 6,
+          titulo: "Participación de otras áreas",
+          objetivo_widget: "Registrar la participación de otras áreas en la iniciativa.",
+          descripcion_campos: {
+            "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+            "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+          },
+          campos: {
+            "titulo": "Participación de otras áreas",
+            "bloques": []
+          },
+        },
+        {
+          id_widget: "w_003",
+          posicion: 7,
+          titulo: "Riesgos",
+          objetivo_widget:
+            "Eres responsable de gestionar este widget de identificación de riesgos del proyecto. Se renderiza como una tabla dinámica donde campos.headers define las columnas y campos.filas contiene los datos.",
 
-  descripcion_campos: {
-    titulo: "Título editable de la sección.",
-    headers:
-      "Array ordenado de { key, label }. Define las columnas de la tabla. key es permanente, label es editable.",
-    filas:
-      "OBLIGATORIO. Array de objetos donde cada uno representa una fila. Las keys de cada objeto deben coincidir exactamente con las keys de headers.",
-    TIPO: "Key fija. Nombre o categoría del riesgo identificado.",
-    PROBABLE_PERDIDA:
-      "Key fija. Consecuencia o impacto esperado.",
-    JUSTIFICACION:
-      "Key fija. Razón por la que este riesgo existe.",
-  },
+          descripcion_campos: {
+            titulo: "Título editable de la sección.",
+            headers:
+              "Array ordenado de { key, label }. Define las columnas de la tabla. key es permanente, label es editable.",
+            filas:
+              "OBLIGATORIO. Array de objetos donde cada uno representa una fila. Las keys de cada objeto deben coincidir exactamente con las keys de headers.",
+            TIPO: "Key fija. Nombre o categoría del riesgo identificado.",
+            PROBABLE_PERDIDA:
+              "Key fija. Consecuencia o impacto esperado.",
+            JUSTIFICACION:
+              "Key fija. Razón por la que este riesgo existe.",
+          },
 
-  campos: {
-    titulo: "Riesgos",
+          campos: {
+            titulo: "Riesgos",
 
-    headers: [
-      {
-        key: "TIPO",
-        label: "Riesgo",
-      },
-      {
-        key: "PROBABLE_PERDIDA",
-        label: "Probable Pérdida",
-      },
-      {
-        key: "JUSTIFICACION",
-        label: "Justificación",
-      },
-    ],
+            headers: [
+              {
+                key: "TIPO",
+                label: "Riesgo",
+              },
+              {
+                key: "PROBABLE_PERDIDA",
+                label: "Probable Pérdida",
+              },
+              {
+                key: "JUSTIFICACION",
+                label: "Justificación",
+              },
+            ],
 
-    filas: [
-      {
-        TIPO: "",
-        PROBABLE_PERDIDA: "",
-        JUSTIFICACION: "",
-      },
-    ],
-  },
-},
-  {
-    //// POR HACER
-    id_widget: "w_001",
-    posicion: 8,
-    titulo: "Exclusiones",
-    objetivo_widget: "Definir los elementos fuera del alcance de la iniciativa.",
-    descripcion_campos: {
-      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-    },
-    campos: {
-      "descripcion": " ",
-      "titulo":"Exclusiones",
-    },
-  },
-   {
-    //// POR HACER
-    id_widget: "w_001",
-    posicion: 9,
-    titulo: "Supuestos",
-    objetivo_widget: "Registrar los supuestos considerados para la iniciativa.",
-    descripcion_campos: {
-      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-    },
-    campos: {
-      "descripcion": " ",
-      "titulo":"Supuestos",
-    },
-  },
-  {
-    //// DONE pero quiero que el subtitulo sea opcional
-    id_widget: "w_001",
-    posicion: 10,
-    titulo: "Restricciones",
-    objetivo_widget: "Documentar las restricciones que afectan la iniciativa.",
-    descripcion_campos: {
-      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-    },
-    campos: {
-      "descripcion": " ",
-      "titulo":"Restricciones",
-    },
-  },
-  {
-    //// POR HACER
-    id_widget:"w_001",
-    posicion: 11,
-    titulo: "Anexos",
-    objetivo_widget: "Adjuntar documentación adicional relevante a la iniciativa.",
-    descripcion_campos: {
-      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-    },
-    campos: {
-      "descripcion": " ",
-      "titulo":"Anexos",
-    },
-  },
-]
+            filas: [
+              {
+                TIPO: "",
+                PROBABLE_PERDIDA: "",
+                JUSTIFICACION: "",
+              },
+            ],
+          },
+        },
+        {
+          id_widget: "w_006",
+          posicion: 8,
+          titulo: "Exclusiones",
+          objetivo_widget: "Definir los elementos fuera del alcance de la iniciativa.",
+          descripcion_campos: {
+            "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+            "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+          },
+          campos: {
+            "titulo": "Exclusiones",
+            "bloques": []
+          },
+        },
+        {
+          //// POR HACER
+          id_widget: "w_006",
+          posicion: 9,
+          titulo: "Supuestos",
+          objetivo_widget: "Registrar los supuestos considerados para la iniciativa.",
+          descripcion_campos: {
+            "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+            "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+          },
+          campos: {
+            "titulo": "Supuestos",
+            "bloques": []
+          },
+        },
+        {
+          //// DONE pero quiero que el subtitulo sea opcional
+          id_widget: "w_006",
+          posicion: 10,
+          titulo: "Restricciones",
+          objetivo_widget: "Documentar las restricciones que afectan la iniciativa.",
+          descripcion_campos: {
+            "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+            "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+          },
+          campos: {
+            "titulo": "Restricciones",
+            "bloques": []
+          },
+        },
+        {
+          //// POR HACER
+          id_widget: "w_006",
+          posicion: 11,
+          titulo: "Anexos",
+          objetivo_widget: "Adjuntar documentación adicional relevante a la iniciativa.",
+          descripcion_campos: {
+            "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
+            "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
+          },
+          campos: {
+            "titulo": "Anexos",
+            "bloques": []
+          },
+        },
+        ]
       }
 
       console.log("📦 PAYLOAD QUE SE ENVÍA:");
@@ -645,16 +637,15 @@ export default function FormModal({
                 <div className="w-[75%]">
                   <div className="bg-gray-100 px-4 pt-3 pb-2">
                     <input
-  value={formData[field.key]}
-  onChange={(e) => handleChange(field.key, e.target.value)}
-  readOnly={field.key === "solicitante" || field.key === "contacto"}
-  className={`w-full bg-transparent outline-none text-sm text-[#5B6670] placeholder:text-[#b5bcc2] ${
-    field.key === "solicitante" || field.key === "contacto"
-      ? "cursor-not-allowed"
-      : ""
-  }`}
-  placeholder={field.placeholder}
-/>
+                      value={formData[field.key]}
+                      onChange={(e) => handleChange(field.key, e.target.value)}
+                      readOnly={field.key === "solicitante" || field.key === "contacto"}
+                      className={`w-full bg-transparent outline-none text-sm text-[#5B6670] placeholder:text-[#b5bcc2] ${field.key === "solicitante" || field.key === "contacto"
+                          ? "cursor-not-allowed"
+                          : ""
+                        }`}
+                      placeholder={field.placeholder}
+                    />
                   </div>
                   <div className="h-[1px] bg-[#5B6670] mt-[1px] w-full" />
                 </div>
@@ -707,8 +698,8 @@ export default function FormModal({
                             key={dep.iddepartamento}
                             onClick={() => toggleDepartamento(depId)}
                             className={`w-full text-left px-4 py-[7px] text-sm transition flex items-center justify-between ${selected
-                                ? "bg-gray-200 text-[#323E48] font-semibold"
-                                : "text-[#5B6670] hover:bg-gray-200"
+                              ? "bg-gray-200 text-[#323E48] font-semibold"
+                              : "text-[#5B6670] hover:bg-gray-200"
                               }`}
                           >
                             <span>{dep.nombre}</span>

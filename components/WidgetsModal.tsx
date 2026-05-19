@@ -170,7 +170,11 @@ export default function WidgetsModal({ isOpen, onClose, widgets, onWidgetsChange
         }
       );
 
-      if (!res.ok) throw new Error("Error al guardar");
+      if (!res.ok) {
+  const errorText = await res.text();
+  console.error("❌ Error backend al guardar:", res.status, errorText);
+  throw new Error("Error al guardar");
+}
 
       setDocWidgets(
   payload.map((w) => ({
@@ -323,7 +327,7 @@ if (!isOpen) return null;
                       const isReorderTarget = reorderDropIndex === i && draggingDocIndex !== null;
 
                       return (
-                        <div key={`${widget.id_widget}-${i}`}>
+                        <div key={`${widget.posicion}-${i}`}>
                           {/* Indicador de reordenamiento */}
                           {isReorderTarget && (
                             <div className="h-1 bg-blue-500 rounded my-1 transition-all" />
@@ -417,10 +421,10 @@ if (!isOpen) return null;
 
                 <div className="flex-1 rounded-3xl bg-[#f9f9f9] p-4 flex flex-col gap-4 overflow-auto">
       {widgetList.map((widget) => (
-    <div
-      key={widget.id_widget}
-      className="relative"
-    >
+  <div
+    key={`widget-${widget.posicion}`}
+    className="relative"
+  >
       {/* Tooltip afuera de la tarjeta */}
       {widget.info && (
         <div className="absolute -top-2 -right-2 z-50">
