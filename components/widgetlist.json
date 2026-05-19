@@ -1,6 +1,33 @@
 [
   {
-    "posicion": 1,
+  "id_widget": "w_006",
+  "posicion": 1,        
+  "titulo": "Sección dinámica",
+  "objetivo_widget": "Gestiona este widget de sección dinámica. Sirve para crear una sección flexible del documento con un título general y una lista de bloques. CAMPO 'titulo' (OBLIGATORIO): si está vacío, genera un título claro, formal y descriptivo según el contexto del proyecto. CAMPO 'bloques' (OBLIGATORIO): debe ser un array de objetos con las claves 'id', 'tipo' y 'texto'. El campo 'tipo' solo puede ser 'subtitulo' o 'parrafo'. Usa 'subtitulo' para apartados breves y 'parrafo' para explicaciones completas. No guardes bloques donde 'texto' esté vacío o contenga solo espacios. Mantén redacción formal, clara y coherente con el documento ERS/SRS. REGLA GENERAL: solo modifica campos; nunca cambies posicion, id_widget, titulo del widget, objetivo_widget ni descripcion_campos.",
+  "descripcion_campos": 
+{
+  "titulo": "OBLIGATORIO si está vacío. Título general de la sección dinámica.",
+  "bloques": "OBLIGATORIO. Array de objetos { id: string, tipo: 'subtitulo' | 'parrafo', texto: string }. No guardar bloques vacíos."
+},
+  "campos": {
+    "titulo": "Título de la sección",
+    "bloques": [
+      {
+        "id": "bloque_1",
+        "tipo": "subtitulo",
+        "texto": "Subtítulo"
+      },
+      {
+        "id": "bloque_2",
+        "tipo": "parrafo",
+        "texto": "Escribe aquí el contenido..."
+      }
+    ]
+  },
+  "info": "Widget flexible para agregar subtítulos y párrafos dentro del documento."
+},
+  {
+    "posicion": 2,
     "id_widget": "w_005",
     "titulo": "Requerimientos de Negocio",
     "objetivo_widget": "Eres responsable de gestionar este widget de tabla libre para capturar los requerimientos de negocio. Cada fila es independiente y puede tener diferente número de celdas que se distribuyen equitativamente. CAMPO 'filas' (OBLIGATORIO): Array de objetos donde cada uno tiene 'celdas': array de objetos con 'valor' (string, contenido principal), 'label' (string opcional, texto pequeño gris encima del valor), 'bold' (boolean opcional). CAMPO 'titulo' (OBLIGATORIO): Título de la sección. REGLA: Las celdas de cada fila se distribuyen equitativamente en el ancho de forma automática. Solo escribe dentro de campos.",
@@ -48,23 +75,6 @@
         { "celdas": [{ "label": "Periodicidad", "valor": "" }]}, 
         { "celdas": [{ "label": "Fechas requeridas de entrega", "valor": "" }]} 
       ]
-    }
-  },
-  {
-        "info": "Sección de subitulo con campos de texto. Modifica el header y los campos según tus necesidades. Ejemplo: OBJETIVO, ALCANCE.",
-
-    "id_widget": "w_002",
-    "posicion": 2,
-    "titulo": "Título con 2 subtítulos y 2 párrafos",
-    "objetivo_widget": "Gestión de los objetivos y alcance de la iniciativa",
-    "descripcion_campos": {
-    },
-    "campos": {
-      "Titulo": "Título descriptivo de lo que representa el texto.",
-      "Seccion_1": "descripción",
-      "Seccion_1Titulo": "Subtítulo",
-      "Seccion_2": "descripción",    
-      "Seccion_2Titulo": "Subtítulo"
     }
   },
   {
@@ -142,28 +152,5 @@
       { "celdas": [{ "valor": "Fila 2 completa", "colspan": 2 }] }
     ]
   }
-},
-{
-  "id_widget": "w_006",
-  "posicion": 6,        
-  "titulo": "Sección dinámica",
-  "objetivo_widget": "Gestiona este widget de sección dinámica. Sirve para crear una sección flexible del documento con un título general y una lista de bloques. CAMPO 'titulo' (OBLIGATORIO): si está vacío, genera un título claro, formal y descriptivo según el contexto del proyecto. Si ya tiene contenido, no lo modifiques salvo que el usuario lo pida. CAMPO 'bloques' (OBLIGATORIO): debe ser un array de objetos con las claves 'id', 'subtitulo' y 'descripcion'. Cada bloque representa un apartado con su subtítulo y su párrafo descriptivo. Si está vacío, genera al menos un bloque relevante. AGREGA, MODIFICA O ELIMINA bloques solo cuando el usuario lo solicite o cuando sea necesario completar información faltante. No guardes bloques donde 'subtitulo' y 'descripcion' estén vacíos o contengan solo espacios. Mantén redacción formal, clara y coherente con el documento ERS/SRS. REGLA GENERAL: solo modifica campos; nunca cambies posicion, id_widget, titulo del widget, objetivo_widget ni descripcion_campos.",
-  "descripcion_campos": {},
-  "campos": {
-    "titulo": "Título de la sección",
-    "bloques": [
-      {
-        "id": "bloque_1",
-        "tipo": "subtitulo",
-        "texto": "Subtítulo"
-      },
-      {
-        "id": "bloque_2",
-        "tipo": "parrafo",
-        "texto": "Escribe aquí el contenido..."
-      }
-    ]
-  },
-  "info": "Widget flexible para agregar subtítulos y párrafos dentro del documento."
 }
 ]

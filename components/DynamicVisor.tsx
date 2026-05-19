@@ -182,8 +182,8 @@ const handleChange = (posicion: number, key: string, value: any) => {
         return renderWChart(widget, handleChange); //
       case "w_005":
         return renderW005(widget, handleChange, highlight);
-      case "w_006":
-        return renderW006(widget, handleChange, highlight);
+        case "w_006":
+      return renderW006(widget, handleChange, highlight);
 
       default:
         return null;
