@@ -5,6 +5,7 @@ import { Home, File as FileIcon, Filter, Calendar, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_URL } from "@/services/api";
+import CustomDatePicker from "@/components/CustomDatePicker"
 
 interface Proyecto {
   folio: number;
@@ -287,32 +288,11 @@ export default function ProyectosDashboard() {
 
          <div>
           <label className="mb-1 block text-xs text-gray-500">Fecha</label>
-
-          <div className="relative">
-            <input
-              ref={fechaInputRef}
-              type="date"
+            <CustomDatePicker
               value={filtroFecha}
-              onChange={(e) => setFiltroFecha(e.target.value)}
-              className="custom-date-input w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 pr-10 text-sm outline-none focus:border-[#EB0029]"
+              onChange={setFiltroFecha}
             />
 
-            <button
-              type="button"
-              onClick={() => {
-                fechaInputRef.current?.showPicker?.();
-                fechaInputRef.current?.focus();
-              }}
-              className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center"
-              aria-label="Abrir calendario"
-            >
-              <img
-                src="/images/Calendario.png"
-                alt=""
-                className="h-4 w-4 object-contain"
-              />
-            </button>
-          </div>
         </div>
 
           <div>
