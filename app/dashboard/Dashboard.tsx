@@ -1,31 +1,58 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation"; 
+import { useSearchParams, useRouter } from "next/navigation";
 import NewProject from "@/components/NewProject";
 import ProjectList from "@/components/ProjectList";
 import ChatBot from "@/components/ChatBot";
 import Documentacion from "@/components/Documentacion";
+import { API_URL } from "@/services/api";
 
 export default function Dashboard() {
   const [expandDocs, setExpandDocs] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<"home" | "dashboard">("home");
-  const searchParams = useSearchParams(); 
   const [checking, setChecking] = useState(true);
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "/";
-    } else {
-      setChecking(false); 
-    }
-  }, []);
+    const verificarToken = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        router.replace("/");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/auth/verify-token`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          localStorage.removeItem("token");
+          router.replace("/");
+          return;
+        }
+
+        setChecking(false);
+      } catch (error) {
+        localStorage.removeItem("token");
+        router.replace("/");
+      }
+    };
+
+    verificarToken();
+  }, [router]);
 
   useEffect(() => {
     const sessionParam = searchParams.get("session");
     if (sessionParam) {
-      setCurrentScreen("dashboard"); 
+      setCurrentScreen("dashboard");
     }
   }, [searchParams]);
 
@@ -52,11 +79,11 @@ export default function Dashboard() {
             <ProjectList />
           </Suspense>
 
-          <div 
+          <div
             className={
               expandDocs
-              ? "flex w-0 min-w-0 min-h-0 overflow-hidden opacity-0 pointer-events-none transition-all duration-300"
-              : "flex flex-1 min-w-[420px] min-h-0 transition-all duration-300"
+                ? "flex w-0 min-w-0 min-h-0 overflow-hidden opacity-0 pointer-events-none transition-all duration-300"
+                : "flex flex-1 min-w-[420px] min-h-0 transition-all duration-300"
             }
           >
             <ChatBot />
@@ -66,7 +93,6 @@ export default function Dashboard() {
             expanded={expandDocs}
             onToggle={() => setExpandDocs((prev) => !prev)}
           />
-
         </>
       )}
     </main>
