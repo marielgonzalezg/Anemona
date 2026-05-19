@@ -160,6 +160,7 @@ export const renderW000 = (
     <EditableText
       value={String(campos[key] ?? "")}
       onChange={(v) => onChange(widget.posicion, key, v)}
+      className={highlight(`${widget.posicion}.campos.${key}`)}
     />
   );
 
@@ -207,7 +208,7 @@ export const renderW001 = (
               "Descripción general de la iniciativa y justificación"
             }
             onChange={(e) => onChange(widget.posicion, "titulo", e.target.value)}
-            className="bg-transparent outline-none font-bold w-full"
+            className={`bg-transparent outline-none font-bold w-full ${highlight(`${widget.posicion}.campos.titulo`)}`}
           />
         }
         note="(Opcional)"
@@ -217,13 +218,14 @@ export const renderW001 = (
       <input
         value={campos.subtitulo || " "}
         onChange={(e) => onChange(widget.posicion, "subtitulo", e.target.value)}
-        className="w-full font-bold text-[13px] mb-4 bg-transparent outline-none"
+        className={`w-full font-bold text-[13px] mb-4 bg-transparent outline-none ${highlight(`${widget.posicion}.campos.subtitulo`)}`}
       />
 
       <BodyText className="mb-6 italic text-[#1d5da8]">
         <EditableText
           value={campos.descripcion || ""}
           onChange={(v) => onChange(widget.posicion, "descripcion", v)}
+          className={highlight(`${widget.posicion}.campos.descripcion`)}
         />
       </BodyText>
 
@@ -237,6 +239,7 @@ export const renderW001 = (
             <EditableText
               value={String(campos[key] ?? "")}
               onChange={(v) => onChange(widget.posicion, key, v)}
+              className={highlight(`${widget.posicion}.campos.${key}`)}
             />
           </div>
         ))}
@@ -261,7 +264,7 @@ export const renderW002 = (
           <input
             value={campos.Titulo || "Objetivos de la iniciativa"}
             onChange={(e) => onChange(widget.posicion, "Titulo", e.target.value)}
-            className="bg-transparent outline-none font-bold w-full"
+            className={`bg-transparent outline-none font-bold w-full ${highlight(`${widget.posicion}.campos.Titulo`)}`}
           />
         }
         note="(Opcional)"
@@ -272,12 +275,13 @@ export const renderW002 = (
         <input
           value={campos.Seccion_1Titulo || " "}
           onChange={(e) => onChange(widget.posicion, "Seccion_1Titulo", e.target.value)}
-          className="w-full font-bold text-[13px] mb-1 bg-transparent outline-none"
+          className={`w-full font-bold text-[13px] mb-1 bg-transparent outline-none ${highlight(`${widget.posicion}.campos.Seccion_1Titulo`)}`}
         />
         <BodyText className="italic text-[#1d5da8]">
           <EditableText
             value={campos.Seccion_1 || ""}
             onChange={(v) => onChange(widget.posicion, "Seccion_1", v)}
+            className={highlight(`${widget.posicion}.campos.Seccion_1`)}
           />
         </BodyText>
       </div>
@@ -286,12 +290,13 @@ export const renderW002 = (
         <input
           value={campos.Seccion_2Titulo || " "}
           onChange={(e) => onChange(widget.posicion, "Seccion_2Titulo", e.target.value)}
-          className="w-full font-bold text-[13px] mb-1 bg-transparent outline-none"
+          className={`w-full font-bold text-[13px] mb-1 bg-transparent outline-none ${highlight(`${widget.posicion}.campos.Seccion_2Titulo`)}`}
         />
         <BodyText className="italic text-[#1d5da8]">
           <EditableText
             value={campos.Seccion_2 || ""}
             onChange={(v) => onChange(widget.posicion, "Seccion_2", v)}
+            className={highlight(`${widget.posicion}.campos.Seccion_2`)}
           />
         </BodyText>
       </div>
@@ -312,10 +317,10 @@ export const renderW003 = (
   const defaultHeaders = campos.filas?.[0]
     ? Object.keys(campos.filas[0]).map((k) => ({ key: k, label: k }))
     : [
-        { key: "TIPO",             label: "Riesgo" },
-        { key: "PROBABLE_PERDIDA", label: "Probable Pérdida" },
-        { key: "JUSTIFICACION",    label: "Justificación" },
-      ];
+      { key: "TIPO", label: "Riesgo" },
+      { key: "PROBABLE_PERDIDA", label: "Probable Pérdida" },
+      { key: "JUSTIFICACION", label: "Justificación" },
+    ];
 
   const headers: { key: string; label: string }[] = campos.headers || defaultHeaders;
   const filas: any[] = campos.filas || [];
@@ -338,6 +343,8 @@ export const renderW003 = (
     const newFilas = filas.map((fila: any, i: number) =>
       i !== rowIndex ? fila : { ...fila, [key]: value }
     );
+
+    onChange(widget.posicion, `filas.${rowIndex}.${key}`, value);
     onChange(widget.posicion, "filas", newFilas);
   };
 
@@ -358,12 +365,13 @@ export const renderW003 = (
           <span className="flex items-center gap-1 text-[18px]">
             {`${widget.posicion}`}
             <input
-  value={titulo}
-  onChange={(e) => handleTituloChange(e.target.value)}
-  className={`bg-transparent outline-none font-semibold
+              value={titulo}
+              onChange={(e) => handleTituloChange(e.target.value)}
+              className={`bg-transparent outline-none font-semibold
     ${showControls ? "border-b border-dashed border-gray-400 focus:border-blue-500" : ""}
+    ${highlight(`${widget.posicion}.campos.titulo`)}
   `}
-/>
+            />
             {"."}
           </span>
         }
@@ -375,44 +383,47 @@ export const renderW003 = (
         <table className="mb-8 w-full border border-black text-[13px]">
           <thead>
             <tr className="bg-[#133b73] text-white">
-  {headers.map((h, i) => (
-    <th key={h.key} className="border px-3 py-1 min-w-[120px]">
-      <input
-        value={h.label}
-        onChange={(e) => handleHeaderLabelChange(i, e.target.value)}
-        className={`bg-transparent text-white text-center outline-none w-full font-semibold
-          ${showControls ? "border-b border-dashed border-white/40 focus:border-white" : ""}`}
-      />
-    </th>
-  ))}
+              {headers.map((h, i) => (
+                <th key={h.key} className="border px-3 py-1 min-w-[120px]">
+                  <input
+                    value={h.label}
+                    onChange={(e) => handleHeaderLabelChange(i, e.target.value)}
+                    className={`bg-transparent text-white text-center outline-none w-full font-semibold
+    ${showControls ? "border-b border-dashed border-white/40 focus:border-white" : ""}
+    ${highlight(`${widget.posicion}.campos.headers`)}
+  `}
+                  />
+                </th>
+              ))}
 
-  {showControls && (
-    <th className="border px-2 py-1 w-10">
-      <button
-        onClick={handleAddColumn}
-        title="Agregar columna"
-        className="text-white/70 hover:text-white text-lg leading-none"
-      >
-        +
-      </button>
-    </th>
-  )}
-</tr>
+              {showControls && (
+                <th className="border px-2 py-1 w-10">
+                  <button
+                    onClick={handleAddColumn}
+                    title="Agregar columna"
+                    className="text-white/70 hover:text-white text-lg leading-none"
+                  >
+                    +
+                  </button>
+                </th>
+              )}
+            </tr>
           </thead>
           <tbody>
             {filas.length ? (
               filas.map((fila: any, rowIdx: number) => (
                 <tr key={rowIdx}>
                   {headers.map((h) => (
-  <td key={h.key} className="border px-2 py-1 align-top">
-    <EditableText
-      value={fila[h.key] ?? ""}
-      onChange={(v) => handleRowChange(rowIdx, h.key, v)}
-    />
-  </td>
-))}
+                    <td key={h.key} className="border px-2 py-1 align-top">
+                      <EditableText
+                        value={fila[h.key] ?? ""}
+                        onChange={(v) => handleRowChange(rowIdx, h.key, v)}
+                        className={highlight(`${widget.posicion}.campos.filas.${rowIdx}.${h.key}`)}
+                      />
+                    </td>
+                  ))}
 
-{showControls && <td className="border" />}
+                  {showControls && <td className="border" />}
                 </tr>
               ))
             ) : (
@@ -433,7 +444,7 @@ export const renderW003 = (
 };
 
 
-  /* ================== W005 ================== */
+/* ================== W005 ================== */
 
 export const renderW005 = (
   widget: Widget,
@@ -458,6 +469,7 @@ export const renderW005 = (
         ),
       };
     });
+    onChange(widget.posicion, `filas.${rowIdx}.celdas.${celIdx}.${field}`, value);
     onChange(widget.posicion, "filas", newFilas);
   };
 
@@ -512,7 +524,7 @@ export const renderW005 = (
     });
     onChange(widget.posicion, "filas", newFilas);
   };
-return (
+  return (
     <div className="mb-8">
       <SubSection
         titleNode={
@@ -521,7 +533,9 @@ return (
             <input
               value={titulo}
               onChange={(e) => handleTituloChange(e.target.value)}
-              className="bg-transparent outline-none border-b border-dashed border-gray-400 focus:border-blue-500 font-semibold"
+              className={`bg-transparent outline-none border-b border-dashed border-gray-400 focus:border-blue-500 font-semibold
+    ${highlight(`${widget.posicion}.campos.titulo`)}
+  `}
             />
             {"."}
           </span>
@@ -547,13 +561,14 @@ return (
                       <EditableText
                         value={cel.label}
                         onChange={(v) => handleCeldaChange(rowIdx, celIdx, "label", v)}
+                        className={highlight(`${widget.posicion}.campos.filas.${rowIdx}.celdas.${celIdx}.label`)}
                       />
                     </div>
                   )}
                   <EditableText
                     value={cel.valor || ""}
                     onChange={(v) => handleCeldaChange(rowIdx, celIdx, "valor", v)}
-                    className={cel.bold ? "font-bold" : ""}
+                    className={`${cel.bold ? "font-bold" : ""} ${highlight(`${widget.posicion}.campos.filas.${rowIdx}.celdas.${celIdx}.valor`)}`}
                   />
                 </div>
               ))}
@@ -575,7 +590,7 @@ return (
                 title="Agregar celda"
               >
                 <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-                  <polyline points="1,8 7,2 13,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="1,8 7,2 13,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
               <button
@@ -585,7 +600,7 @@ return (
                 title="Quitar celda"
               >
                 <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-                  <polyline points="1,2 7,8 13,2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="1,2 7,8 13,2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>

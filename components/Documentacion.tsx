@@ -75,7 +75,7 @@ function EmailPopup({ success, message, onClose }: { success: boolean; message: 
           </h2>
           <p className="text-sm text-gray-500">{message}</p>
         </div>
-        <button onClick={onClose} className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition">
+         <button onClick={onClose} className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition">
           Aceptar
         </button>
       </div>
@@ -91,6 +91,7 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [isWidgetsOpen, setIsWidgetsOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [activeDocId, setActiveDocId] = useState("");
   const [emailPopup, setEmailPopup] = useState<{ show: boolean; success: boolean; message: string }>({
     show: false, success: false, message: "",
   });
@@ -99,6 +100,7 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
   const arqDownloadRef = useRef<(() => Promise<void>) | null>(null);
 
   const prevRawDataRef = useRef<any>(null);
+  const prevDocIdRef = useRef<string>(""); 
 
   const getActiveProjectId = () => {
     if (typeof window === "undefined") return "";
@@ -110,20 +112,20 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
     return localStorage.getItem("token") || "";
   };
 
-  const mapDataToWidgets = (data: any): Widget[] => {
-    console.log("🔴 mapDataToWidgets →", data);
-    return Object.entries(data)
-      .filter(([key]) => !isNaN(Number(key)))
-      .sort(([a], [b]) => Number(a) - Number(b))
-      .map(([key, w]: [string, any]) => ({
-        posicion: Number(key),
-        id_widget: w.id_widget ?? key,
-        titulo: w.titulo ?? key,
-        objetivo_widget: w.objetivo_widget ?? "",
-        descripcion_campos: w.descripcion_campos ?? {},
-        campos: w.campos ?? {},
-      }));
-  };
+const mapDataToWidgets = (data: any): Widget[] => {
+  console.log("🔴 mapDataToWidgets →", data);
+  return Object.entries(data)
+    .filter(([key]) => !isNaN(Number(key)))  // solo llaves numéricas (posiciones)
+    .sort(([a], [b]) => Number(a) - Number(b))  // ordenar por posición
+    .map(([key, w]: [string, any]) => ({
+      posicion: Number(key),
+      id_widget: w.id_widget ?? key,
+      titulo: w.titulo ?? key,
+      objetivo_widget: w.objetivo_widget ?? "",
+      descripcion_campos: w.descripcion_campos ?? {},
+      campos: w.campos ?? {},
+    }));
+};
 
   useEffect(() => {
     let isMounted = true;
@@ -156,9 +158,10 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
       return changed;
     };
 
-    const fetchERS = async () => {
+    const fetchERS = async (shouldHighlight: boolean = false) => {
       try {
         const docId = getActiveProjectId();
+        setActiveDocId(docId);
         console.log("🔵 fetchERS corriendo con docId:", docId);
         if (!docId) return;
 
@@ -173,22 +176,47 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
         console.log("🟢 json.data →", json.data);
 
         if (isMounted && json.ok && json.data) {
-          const changes = prevRawDataRef.current
-            ? detectChanges(prevRawDataRef.current, json.data)
-            : new Set<string>();
+  const isDifferentProject = prevDocIdRef.current !== docId;
 
-          if (changes.size > 0) {
-            console.log("🟡 changedFields:", [...changes]);
-            setChangedFields(changes);
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-              if (isMounted) setChangedFields(new Set());
-            }, 5000);
-          }
+  const suppressHighlight =
+  sessionStorage.getItem("suppress_ers_highlight") === "1";
 
-          prevRawDataRef.current = json.data;
-          setWidgets(mapDataToWidgets(json.data));
-        }
+if (suppressHighlight) {
+  sessionStorage.removeItem("suppress_ers_highlight");
+}
+
+  // Si cambiaste de proyecto, NO compares contra el anterior.
+  // Solo carga el documento limpio.
+  if (isDifferentProject) {
+    prevDocIdRef.current = docId;
+    prevRawDataRef.current = json.data;
+    setChangedFields(new Set());
+    setWidgets(mapDataToWidgets(json.data));
+    return;
+  }
+
+  // Solo highlightear cuando explícitamente venga de "Guardar" o "Enviar".
+  const changes =
+    shouldHighlight && prevRawDataRef.current
+      ? detectChanges(prevRawDataRef.current, json.data)
+      : new Set<string>();
+
+  if (changes.size > 0) {
+    console.log("🟡 changedFields:", [...changes]);
+    setChangedFields(changes);
+
+    if (timeoutId) clearTimeout(timeoutId);
+
+    timeoutId = setTimeout(() => {
+      if (isMounted) setChangedFields(new Set());
+    }, 1000);
+  } else {
+    setChangedFields(new Set());
+  }
+
+  prevRawDataRef.current = json.data;
+  setWidgets(mapDataToWidgets(json.data));
+}
       } catch (error) {
         console.error("Error cargando ERS:", error);
       } finally {
@@ -196,16 +224,32 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
       }
     };
 
-    const handleRefresh = () => setTimeout(() => fetchERS(), 100);
+    const handleRefreshWithHighlight = () => {
+      setTimeout(() => fetchERS(true), 100);
+    };
 
-    fetchERS();
-    window.addEventListener("ers-refresh", handleRefresh);
-    window.addEventListener("chat-session-changed", handleRefresh);
+    const handleProjectChange = () => {
+  setChangedFields(new Set());
+  prevRawDataRef.current = null;
+  prevDocIdRef.current = "";
+  setWidgets([]);
 
+  setTimeout(() => fetchERS(false), 100);
+};
+
+    // Carga inicial sin highlight
+    fetchERS(false);
+
+    // Este evento sí highlightea porque viene de guardar/enviar cambios
+    window.addEventListener("ers-refresh", handleRefreshWithHighlight);
+
+
+    // Este evento NO highlightea porque es cambio de proyecto/sesión
+    window.addEventListener("document-project-change", handleProjectChange);
     return () => {
       isMounted = false;
-      window.removeEventListener("ers-refresh", handleRefresh);
-      window.removeEventListener("chat-session-changed", handleRefresh);
+      window.removeEventListener("ers-refresh", handleRefreshWithHighlight);
+window.removeEventListener("document-project-change", handleProjectChange);
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
@@ -360,46 +404,52 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
                 {(
                   [
                     "ERS",
+                    //OCULTAR_ANALISIS "Análisis",
                     "Arquitectura",
+                    //OCULTAR_ANALISIS (así es como estaba antes pero quitando análisis marca error)] as const).map((t) => (
                   ] as ("ERS" | "Análisis" | "Arquitectura")[]
-                ).map((t) => (
-                  <div key={t} className="flex shrink-0 flex-col gap-1">
-                    <span className="px-1 text-xs font-bold uppercase tracking-wider text-gray-500">
-                      {DOC_NAMES[t]}
-                    </span>
-                    <div className="relative h-72 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md">
-                      {t === "ERS" || t === "Análisis" ? (
-                        <div
-                          className="pointer-events-none h-full w-full overflow-hidden"
-                          style={{
-                            transform: "scale(0.33)",
-                            transformOrigin: "top left",
-                            width: "303%",
-                            height: "303%",
-                          }}
-                        >
-                          {loadingERS ? (
-                            <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                              Cargando ERS...
-                            </div>
-                          ) : (
-                            <WidgetRenderer
-                              widgets={widgets}
-                              changedFields={changedFields}
-                            />
-                          )}
-                        </div>
-                      ) : (
-                        <div
-                          className="pointer-events-none h-full w-full overflow-hidden"
-                          style={{
-                            transform: "scale(0.33)",
-                            transformOrigin: "top left",
-                            width: "303%",
-                            height: "303%",
-                          }}
-                        >
-                          {/* Preview en vista colapsada: sin registrar descarga */}
+                ).map(
+                  (
+                    t, //momentáneo
+                  ) => (
+                    <div key={t} className="flex shrink-0 flex-col gap-1">
+                      <span className="px-1 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        {DOC_NAMES[t]}
+                      </span>
+                      <div className="relative h-72 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md">
+                        {t === "ERS" || t === "Análisis" ? (
+                          <div
+                            className="pointer-events-none h-full w-full overflow-hidden"
+                            style={{
+                              transform: "scale(0.33)",
+                              transformOrigin: "top left",
+                              width: "303%",
+                              height: "303%",
+                            }}
+                          >
+                            {loadingERS ? (
+                              <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                                Cargando ERS...
+                              </div>
+                            ) : (
+                              <WidgetRenderer
+                                key={activeDocId}
+                                widgets={widgets}
+                                changedFields={changedFields}
+                              />
+                            )}
+                          </div>
+                        ) : (
+                          <div
+                            className="pointer-events-none h-full w-full overflow-hidden"
+                            style={{
+                              transform: "scale(0.33)",
+                              transformOrigin: "top left",
+                              width: "303%",
+                              height: "303%",
+                            }}
+                          >
+                            {/* Preview en vista colapsada: sin registrar descarga */}
                           <ArquitecturaDiagram />
                         </div>
                       )}
@@ -426,39 +476,45 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
           {expanded && (
             <>
               <div className="relative mb-5 flex items-center justify-center">
-                <div className="flex gap-2 rounded-lg bg-white px-2 py-2 shadow">
+                <div className="flex gap-2 rounded-full bg-white px-2 py-2 shadow">
                   {(
                     [
                       "ERS",
+                      // OCULTAR_ANALISIS "Análisis",
                       "Arquitectura",
+                      //OCULTAR_ANALISIS (así es como estaba antes pero quitando análisis marca error)] as const).map((t) => (
                     ] as ("ERS" | "Análisis" | "Arquitectura")[]
-                  ).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setTab(t)}
-                      className={
-                        tab === t
-                          ? "rounded-lg bg-[#EB0029] px-10 py-2 text-sm font-semibold text-white shadow"
-                          : "rounded-lg px-10 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
-                      }
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  ).map(
+                    (
+                      t, //momentáneo
+                    ) => (
+                      <button
+                        key={t}
+                        onClick={() => setTab(t)}
+                        className={
+                          tab === t
+                            ? "rounded-full bg-[#EB0029] px-10 py-2 text-sm font-semibold text-white shadow"
+                            : "rounded-full px-10 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
+                        }
+                      >
+                        {t}
+                      </button>
+                    ),
+                  )}
                 </div>
 
                 <div className="absolute right-0 flex items-center gap-2">
-              <button
-                onClick={handleSendEmail}
-                disabled={sendingEmail}
-                className="group flex cursor-pointer items-center gap-2 bg-transparent p-2 transition disabled:cursor-not-allowed disabled:opacity-60"
-                title="Enviar documento por correo"
-              >
-                {sendingEmail ? (
-                  <Loader2
-                    size={22}
-                    className="animate-spin text-[#EB0029]"
-                  />
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail}
+                    className="group flex cursor-pointer items-center gap-2 bg-transparent p-2 transition disabled:cursor-not-allowed disabled:opacity-60"
+                    title="Enviar documento por correo"
+                  >
+                    {sendingEmail ? (
+                      <Loader2
+                        size={22}
+                        className="animate-spin text-[#EB0029]"
+                       />
                 ) : (
                   <Mail
                     className="text-[#EB0029] transition group-hover:text-gray-500"
@@ -483,9 +539,9 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
 
                 <span className="font-medium text-[#EB0029] transition group-hover:text-gray-500">
                   Descargar
-                </span>
-              </button>
-              </div>
+                    </span>
+                  </button>
+                </div>
               </div>
 
               <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-white shadow">
