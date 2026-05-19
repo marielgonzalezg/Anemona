@@ -6,6 +6,7 @@ import {
   renderW002,
   renderW003,
   renderW005,
+  renderW006,
   Widget,
 } from "./widgets/BibliotecaWidgets";
 import { API_URL } from "@/services/api";
@@ -181,6 +182,8 @@ const handleChange = (posicion: number, key: string, value: any) => {
         return renderWChart(widget, handleChange); //
       case "w_005":
         return renderW005(widget, handleChange, highlight);
+      case "w_006":
+        return renderW006(widget, handleChange, highlight);
 
       default:
         return null;

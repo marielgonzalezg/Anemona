@@ -253,41 +253,68 @@ export default function FormModal({
       TIPO_INICIATIVA: null,
     },
   },
-  {
-    //// DONE
-    posicion: 1,
-    id_widget: "w_001",
-    titulo: "Descripción de la iniciativa",
-    objetivo_widget: "Describir de manera general la iniciativa, su propósito y contexto.",
+{
+  id_widget: "w_006",
+  posicion: 1,        
+  titulo: "Descripción de la iniciativa",
+  objetivo_widget: "Describir de manera general la iniciativa, su propósito y contexto.",
+  descripcion_campos: {
     descripcion_campos: {
       "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
-      "subtitulo": "OPCIONAL. Sobrescribe el subtítulo de la sección. Valor por defecto: 'Descripción general de la iniciativa'."
-    },
-    campos: {
-      "descripcion": "NULL",
-      "titulo":"Descripción general de la iniciativa y justificación.",
-      "subtitulo":"Descripción General de la Iniciativa  "
+      "tipo": "subtitulo o parrado, dependiendo de comman b ",
+      "texto": "lo que se escribe dentro de este parrafo o subtitulo"
     },
   },
+  campos: {
+    "titulo": "Descripción de la iniciativa",
+    "bloques": [
+      {
+        "id": "bloque_1",
+        "tipo": "subtitulo",
+        "texto": "Descripción general de la iniciativa"
+      },
+      {
+        "id": "bloque_2",
+        "tipo": "parrafo",
+        "texto": " "
+      }
+    ]
+  },
+},
   {
-    //// DONE
-    posicion: 2,
-    id_widget: "w_002",
-    titulo: "Objetivos y alcance",
-    objetivo_widget:
-      "Definir el objetivo principal y el alcance de la iniciativa.",
-    
-    descripcion_campos: {
-    },
-    campos: {
-      Titulo: "Objetivos de la iniciativa. ",
-      Seccion_1: "NULL",
-      Seccion_1Titulo: "Objetivo",
-      Seccion_2: "NULL",    
-      Seccion_2Titulo: "Alcance",
-    },
+  id_widget: "w_006",
+  posicion: 2,        
+  titulo: "Objetivos y alcance",
+  objetivo_widget: "Definir el objetivo principal y el alcance de la iniciativa.",
+  descripcion_campos: {
+    descripcion_campos: {},
   },
+  campos: {
+    "titulo": "Descripción de la iniciativa",
+    "bloques": [
+      {
+        "id": "bloque_1",
+        "tipo": "subtitulo",
+        "texto": "Objetivo"
+      },
+      {
+        "id": "bloque_2",
+        "tipo": "parrafo",
+        "texto": " ", 
+      },
+      {
+        "id": "bloque_3",
+        "tipo": "subtitulo",
+        "texto": "Alcance"
+      },
+      {
+        "id": "bloque_4",
+        "tipo": "parrafo",
+        "texto": " "
+      }
+    ]
+  },
+},
    {
     //// DONE 
     id_widget: "w_003",
@@ -333,7 +360,7 @@ export default function FormModal({
 
         { "celdas": [{ "label": "Fecha de emisión de la regulación.", "valor": "" },
           { "label": "NA", "valor": "" }
-          ,]},
+        ]},
         { "celdas": [{ "label": "Fecha de recepción de la regulación por parte de GFNorte.", "valor": "" },
           { "label": "N/A", "valor": "" }]},
         { "celdas": [{ "label": "Fecha de entrada en vigor de la regulación.", "valor": "" },
@@ -353,42 +380,55 @@ export default function FormModal({
         ]},
         { "celdas": [{ "valor": "En caso de ser un requerimiento Periódico.", "bold": true }] },
         { "celdas": [{ "label": "Periodicidad", "valor": "" }]}, 
-        { "celdas": [{ "label": "Fechas requeridas de entrega", "valor": "" }]}, 
+        { "celdas": [{ "label": "Fechas requeridas de entrega", "valor": "" }]} 
       ]
     }
   },
-
   {
-    //// POR HACER
-    id_widget: "w_001",
-    posicion: 8,
-    titulo: "Beneficios",
-    objetivo_widget: "Identificar beneficios adicionales derivados de la iniciativa.",
-    descripcion_campos: {
-      OTROS_BENEFICIOS: "Otros beneficios",
-    },
-    campos: {
-      OTROS_BENEFICIOS: null,
-    },
+  id_widget: "w_006",
+  posicion: 5,        
+  titulo: "Beneficios",
+  objetivo_widget: "Identificar beneficios adicionales derivados de la iniciativa.",
+  descripcion_campos: {
+    descripcion_campos: {},
   },
-   {
-    //// POR HACER
-    id_widget: "w_001",
-    posicion: 9,
-    titulo: "Participación de otras áreas",
-    objetivo_widget: "Registrar la participación de otras áreas en la iniciativa.",
-    descripcion_campos: {
+  campos: {
+    "titulo": "Beneficios",
+    "bloques": [
+      {
+        "id": "bloque_1",
+        "tipo": "subtitulo",
+        "texto": "Otros Beneficios"
+      },
+      {
+        "id": "bloque_2",
+        "tipo": "parrafo",
+        "texto": " "
+      }
+    ]
+  },
+},
+{
+  id_widget: "w_006",
+  posicion: 6,        
+  titulo: "Participación de otras áreas",
+  objetivo_widget: "Registrar la participación de otras áreas en la iniciativa.",
+  descripcion_campos: {
       "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
       "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
     },
-    campos: {
-      "descripcion": "NULL",
-      "titulo":"Participación de otras áreas",
-    },
+  campos: {
+    "titulo": "Participación de otras áreas",
+    "bloques": [ {
+        "id": "bloque_1",
+        "tipo": "parrafo",
+        "texto": " "
+      }]
   },
+},
   {
   id_widget: "w_003",
-  posicion: 10,
+  posicion: 7,
   titulo: "Riesgos",
   objetivo_widget:
     "Eres responsable de gestionar este widget de identificación de riesgos del proyecto. Se renderiza como una tabla dinámica donde campos.headers define las columnas y campos.filas contiene los datos.",
@@ -436,7 +476,7 @@ export default function FormModal({
   {
     //// POR HACER
     id_widget: "w_001",
-    posicion: 11,
+    posicion: 8,
     titulo: "Exclusiones",
     objetivo_widget: "Definir los elementos fuera del alcance de la iniciativa.",
     descripcion_campos: {
@@ -444,14 +484,14 @@ export default function FormModal({
       "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
     },
     campos: {
-      "descripcion": "NULL",
+      "descripcion": " ",
       "titulo":"Exclusiones",
     },
   },
    {
     //// POR HACER
     id_widget: "w_001",
-    posicion: 12,
+    posicion: 9,
     titulo: "Supuestos",
     objetivo_widget: "Registrar los supuestos considerados para la iniciativa.",
     descripcion_campos: {
@@ -459,14 +499,14 @@ export default function FormModal({
       "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
     },
     campos: {
-      "descripcion": "NULL",
+      "descripcion": " ",
       "titulo":"Supuestos",
     },
   },
   {
     //// DONE pero quiero que el subtitulo sea opcional
     id_widget: "w_001",
-    posicion: 13,
+    posicion: 10,
     titulo: "Restricciones",
     objetivo_widget: "Documentar las restricciones que afectan la iniciativa.",
     descripcion_campos: {
@@ -474,14 +514,14 @@ export default function FormModal({
       "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
     },
     campos: {
-      "descripcion": "NULL",
+      "descripcion": " ",
       "titulo":"Restricciones",
     },
   },
   {
     //// POR HACER
     id_widget:"w_001",
-    posicion: 14,
+    posicion: 11,
     titulo: "Anexos",
     objetivo_widget: "Adjuntar documentación adicional relevante a la iniciativa.",
     descripcion_campos: {
@@ -489,7 +529,7 @@ export default function FormModal({
       "titulo": "OPCIONAL. Sobrescribe el título principal de la sección. Valor por defecto: 'Descripción general de la iniciativa y justificación'.",
     },
     campos: {
-      "descripcion": "NULL",
+      "descripcion": " ",
       "titulo":"Anexos",
     },
   },

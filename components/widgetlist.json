@@ -1,20 +1,53 @@
 [
   {
-      "info": "Descripción general de la iniciativa, este widget es ideal para proporcionar un resumen o contexto sobre la iniciativa que se está documentando. Modifica el header y los campos según tus necesidades.",
-
-    "id_widget": "w_001",
     "posicion": 1,
-    "titulo": "Título con un subtítulo y un párrafo",
-    "objetivo_widget": "Gestión de la descripción de la iniciativa",
+    "id_widget": "w_005",
+    "titulo": "Requerimientos de Negocio",
+    "objetivo_widget": "Eres responsable de gestionar este widget de tabla libre para capturar los requerimientos de negocio. Cada fila es independiente y puede tener diferente número de celdas que se distribuyen equitativamente. CAMPO 'filas' (OBLIGATORIO): Array de objetos donde cada uno tiene 'celdas': array de objetos con 'valor' (string, contenido principal), 'label' (string opcional, texto pequeño gris encima del valor), 'bold' (boolean opcional). CAMPO 'titulo' (OBLIGATORIO): Título de la sección. REGLA: Las celdas de cada fila se distribuyen equitativamente en el ancho de forma automática. Solo escribe dentro de campos.",
     "descripcion_campos": {
-      "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
-      "titulo": "Título descriptivo de lo que representa el texto.",
-      "subtitulo": "Subtítulo"
+      "titulo": "Título de la sección.",
+      "filas": "Array de filas independientes. Cada fila tiene 'celdas': array de objetos con 'valor' (string), 'label' (string opcional, aparece pequeño encima del valor), 'bold' (boolean opcional). Las celdas se dividen el ancho equitativamente de forma automática por fila."
     },
     "campos": {
-      "descripcion": "descripción",
-      "titulo":"Título descriptivo de lo que representa el texto.",
-      "subtitulo": "Subtítulo"
+      "titulo": "Requerimientos de Negocio",
+      "filas": [
+        { "celdas": [{ "valor": "tablaFR", "bold": true }] },
+        { "celdas": [
+            { "label": "Área participante", "valor": "" },
+            { "label": "N/A", "valor": "" },
+            { "label": "Responsable", "valor": "" },
+            { "label": "N/A", "valor": "" }
+        ]},
+        { "celdas": [{ "valor": "En caso de ser un requerimiento Regulatorio.", "bold": true }  ]},
+        { "celdas": [
+          { "label": "Autoridad que solicita la regulación o cambio.", "valor": "" },
+          { "label": "por definir", "valor": "" }
+        ]},
+
+        { "celdas": [{ "label": "Fecha de emisión de la regulación.", "valor": "" },
+          { "label": "NA", "valor": "" }
+        ]},
+        { "celdas": [{ "label": "Fecha de recepción de la regulación por parte de GFNorte.", "valor": "" },
+          { "label": "N/A", "valor": "" }]},
+        { "celdas": [{ "label": "Fecha de entrada en vigor de la regulación.", "valor": "" },
+          { "label": "N/A", "valor": "" }
+        ]},
+        { "celdas": [{ "label": "Monto posible de la sanción (Multa).", "valor": "" },
+          { "label": "0", "valor": "" }
+        ]},
+        { "celdas": [{ "label": "Aplicativos (sistemas) que se ven impactados.", "valor": "" },
+          { "label": "N/A", "valor": "" }
+        ]},
+
+        { "celdas": [{ "valor": "En caso de no ser requerimiento Regulatorio.", "bold": true }] },
+        { "celdas": [
+            { "label": "Es urgente", "valor": "" },
+            { "label": "Fecha límite de la Urgencia", "valor": "" }
+        ]},
+        { "celdas": [{ "valor": "En caso de ser un requerimiento Periódico.", "bold": true }] },
+        { "celdas": [{ "label": "Periodicidad", "valor": "" }]}, 
+        { "celdas": [{ "label": "Fechas requeridas de entrega", "valor": "" }]} 
+      ]
     }
   },
   {
@@ -109,5 +142,28 @@
       { "celdas": [{ "valor": "Fila 2 completa", "colspan": 2 }] }
     ]
   }
+},
+{
+  "id_widget": "w_006",
+  "posicion": 6,        
+  "titulo": "Sección dinámica",
+  "objetivo_widget": "Gestiona este widget de sección dinámica. Sirve para crear una sección flexible del documento con un título general y una lista de bloques. CAMPO 'titulo' (OBLIGATORIO): si está vacío, genera un título claro, formal y descriptivo según el contexto del proyecto. Si ya tiene contenido, no lo modifiques salvo que el usuario lo pida. CAMPO 'bloques' (OBLIGATORIO): debe ser un array de objetos con las claves 'id', 'subtitulo' y 'descripcion'. Cada bloque representa un apartado con su subtítulo y su párrafo descriptivo. Si está vacío, genera al menos un bloque relevante. AGREGA, MODIFICA O ELIMINA bloques solo cuando el usuario lo solicite o cuando sea necesario completar información faltante. No guardes bloques donde 'subtitulo' y 'descripcion' estén vacíos o contengan solo espacios. Mantén redacción formal, clara y coherente con el documento ERS/SRS. REGLA GENERAL: solo modifica campos; nunca cambies posicion, id_widget, titulo del widget, objetivo_widget ni descripcion_campos.",
+  "descripcion_campos": {},
+  "campos": {
+    "titulo": "Título de la sección",
+    "bloques": [
+      {
+        "id": "bloque_1",
+        "tipo": "subtitulo",
+        "texto": "Subtítulo"
+      },
+      {
+        "id": "bloque_2",
+        "tipo": "parrafo",
+        "texto": "Escribe aquí el contenido..."
+      }
+    ]
+  },
+  "info": "Widget flexible para agregar subtítulos y párrafos dentro del documento."
 }
 ]

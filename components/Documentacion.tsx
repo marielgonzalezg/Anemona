@@ -504,6 +504,7 @@ window.removeEventListener("document-project-change", handleProjectChange);
                 </div>
 
                 <div className="absolute right-0 flex items-center gap-2">
+                  {tab === "ERS" && (
                   <button
                     onClick={handleSendEmail}
                     disabled={sendingEmail}
@@ -526,7 +527,7 @@ window.removeEventListener("document-project-change", handleProjectChange);
                   {sendingEmail ? "Enviando..." : "Enviar por correo"}
                 </span>
               </button>
-
+                  )}
               <button
                 onClick={handleDownload}
                 className="group flex cursor-pointer items-center gap-2 bg-transparent p-2 transition"
