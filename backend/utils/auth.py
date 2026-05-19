@@ -4,7 +4,7 @@ from passlib.context import CryptContext
 
 SECRET_KEY = "mi-clave-secreta-123"
 ALGORITHM = "HS256"
-MINUTOS_EXPIRACION = 30
+MINUTOS_EXPIRACION = 20
 
 pwd_context = CryptContext(schemes=["bcrypt"])
 

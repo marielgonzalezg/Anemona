@@ -329,22 +329,22 @@ export default function ProyectosDashboard() {
 
         <button
           onClick={limpiarFiltros}
-          className="bg-[#EB0029] text-white font-semibold text-xs px-3 py-2 rounded-md hover:bg-red-700 transition mt-10"
+          className="bg-[#EB0029] text-white font-semibold text-xs px-3 py-2 rounded-lg hover:bg-red-700 transition mt-10"
         >
           Limpiar
         </button>
 
-        <button
-          onClick={() => setShowAIModal(true)}
-          className="mt-3 flex items-center justify-center gap-2 rounded-md bg-gray-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-700"
-        >
-          <img
-            src="/images/Buscar.png"
-            alt="Buscar con IA"
-            className="h-4 w-4 object-contain"
-          />
-          <span>Buscar con IA</span>
-        </button>
+      <button
+      onClick={() => setShowAIModal(true)}
+      className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-gray-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-600"
+    >
+      <img
+        src="/images/Buscar.png"
+        alt="Buscar con IA"
+        className="h-4 w-4 object-contain"
+      />
+      <span>Buscar con IA</span>
+    </button>
 
         {/* Logo */}
         <div className="mt-auto flex justify-center pt-4">
@@ -380,7 +380,7 @@ export default function ProyectosDashboard() {
                     <FileIcon size={14} strokeWidth={2.5} className="text-white" />
                   </div>
 
-                  <span className="truncate text-sm font-semibold text-gray-900">
+                  <span className="truncate text-sm font-semibold text-gray-700">
                     {proyecto.nombreproyecto}
                   </span>
 
