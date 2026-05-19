@@ -113,39 +113,47 @@ export default function ProjectList() {
 
   // que me lleve a dicho chat
   const handleOpenProjectChat = (project: ProjectItem) => {
-    console.log("CLICK PROJECT:", project);
-    console.log("SESSION ID DEL PROYECTO:", project.session_id);
+  console.log("CLICK PROJECT:", project);
+  console.log("SESSION ID DEL PROYECTO:", project.session_id);
 
-    setSelectedId(project.folio);
+  setSelectedId(project.folio);
 
-    const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
+  const loggedUserId = localStorage.getItem("idusuario")?.trim() || "";
 
-    sessionStorage.setItem("chat_user_id", loggedUserId);
-    sessionStorage.setItem("chat_session_id", project.session_id);
+  sessionStorage.setItem("chat_user_id", loggedUserId);
+  sessionStorage.setItem("chat_session_id", project.session_id);
 
-    if (project.id_firestore_document) {
-      sessionStorage.setItem("project_id", project.id_firestore_document);
-    } else {
-      sessionStorage.removeItem("project_id");
-    }
+  if (project.id_firestore_document) {
+    sessionStorage.setItem("project_id", project.id_firestore_document);
+  } else {
+    sessionStorage.removeItem("project_id");
+  }
 
-    const currentSession = searchParams.get("session");
-
-    if (pathname === "/dashboard" && currentSession) {
-      window.dispatchEvent(
-        new CustomEvent("chat-session-changed", {
-          detail: {
-            userId: loggedUserId,
-            sessionId: project.session_id,
-            projectId: project.id_firestore_document ?? "",
-            folio: project.folio,
-          },
-        })
-      );
-    } else {
-      router.push(`/dashboard?session=${project.session_id}`);
-    }
+  const detail = {
+    userId: loggedUserId,
+    sessionId: project.session_id,
+    projectId: project.id_firestore_document ?? "",
+    folio: project.folio,
   };
+
+  sessionStorage.setItem("suppress_ers_highlight", "1");
+
+if (pathname === "/dashboard") {
+  // 1. Este evento es para que el CHAT cambie de sesión
+  window.dispatchEvent(
+    new CustomEvent("chat-session-changed", { detail })
+  );
+
+  // 2. Este evento es para que DOCUMENTACIÓN cambie sin highlight
+  window.dispatchEvent(
+    new CustomEvent("document-project-change", { detail })
+  );
+
+  router.push(`/dashboard?session=${project.session_id}`);
+} else {
+  router.push(`/dashboard?session=${project.session_id}`);
+}
+};
 
   const orderedProjects = [...projects].sort((a, b) => {
     if (a.folio === selectedId) return -1;
