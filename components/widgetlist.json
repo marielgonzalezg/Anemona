@@ -4,7 +4,7 @@
 
     "id_widget": "w_001",
     "posicion": 1,
-    "titulo": "Descripción de la Iniciativa",
+    "titulo": "Título con un subtítulo y un párrafo",
     "objetivo_widget": "Gestión de la descripción de la iniciativa",
     "descripcion_campos": {
       "descripcion": "OBLIGATORIO si está vacío. Explicación completa de la iniciativa: problema a resolver, contexto actual y justificación del proyecto. Si ya tiene contenido, solo modificar si el usuario lo pide explícitamente.",
@@ -22,7 +22,7 @@
 
     "id_widget": "w_002",
     "posicion": 2,
-    "titulo": "Título descriptivo de lo que representa el texto.",
+    "titulo": "Título con 2 subtítulos y 2 párrafos",
     "objetivo_widget": "Gestión de los objetivos y alcance de la iniciativa",
     "descripcion_campos": {
     },
@@ -86,9 +86,9 @@
         "barras": "OBLIGATORIO. Array de objetos { etiqueta: string, valor: number }. Cada objeto es una barra de la gráfica."
     },
     "campos": {
-        "titulo": "",
-        "unidad": "",
-        "pie": "",
+        "titulo": "Título descriptivo de lo que representa las gráficas.",
+        "unidad": "unidad",
+        "pie": "pie",
         "barras": [
             { "etiqueta": "Categoría 1", "valor": 60 },
             { "etiqueta": "Categoría 2", "valor": 40 }
@@ -96,6 +96,7 @@
     }
 },
 {
+  "info": "Tabla libre: utiliza este widget cuando necesitas una tabla flexible donde cada fila puede tener diferente número de celdas. Puedes agregar filas con el botón +, agregar o quitar celdas con las flechas laterales y eliminar filas con la X roja. Es ideal para requerimientos de negocio, información regulatoria, responsables, fechas, periodicidad o cualquier sección que no tenga una estructura fija.",
   "id_widget": "w_005",
   "titulo": "Tabla libre",
   "posicion": 5,        

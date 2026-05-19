@@ -39,16 +39,16 @@ function DownloadPopup({ docName, onClose }: { docName: string; onClose: () => v
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 transition hover:text-gray-600">
           <X size={18} />
         </button>
-        <div className="rounded-full bg-green-100 p-4">
-          <CheckCircle className="text-green-500" size={36} />
-        </div>
+
+        <img src="/images/OpExitosa.png" alt="Operación exitosa" className="w-24 h-24 object-contain" />
+
         <div className="text-center">
           <h2 className="mb-1 text-lg font-bold text-gray-800">¡Descarga exitosa!</h2>
           <p className="text-sm text-gray-500">
             <span className="font-semibold text-gray-700">{docName}</span> se ha descargado correctamente.
           </p>
         </div>
-        <button onClick={onClose} className="mt-2 rounded-full bg-[#EB0029] px-8 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#c8001f]">
+        <button onClick={onClose} className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition">
           Aceptar
         </button>
       </div>
@@ -64,16 +64,18 @@ function EmailPopup({ success, message, onClose }: { success: boolean; message: 
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 transition hover:text-gray-600">
           <X size={18} />
         </button>
-        <div className={`rounded-full p-4 ${success ? "bg-green-100" : "bg-red-100"}`}>
-          {success ? <CheckCircle className="text-green-500" size={36} /> : <X className="text-red-500" size={36} />}
-        </div>
+        <img
+          src={success ? "/images/OpExitosa.png" : "/images/Error.png"}
+          alt={success ? "Operación exitosa" : "Error"}
+          className="w-24 h-24 object-contain"
+        />
         <div className="text-center">
           <h2 className="mb-1 text-lg font-bold text-gray-800">
             {success ? "¡Correo enviado!" : "Error al enviar"}
           </h2>
           <p className="text-sm text-gray-500">{message}</p>
         </div>
-        <button onClick={onClose} className="mt-2 rounded-full bg-[#EB0029] px-8 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#c8001f]">
+        <button onClick={onClose} className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition">
           Aceptar
         </button>
       </div>
@@ -93,6 +95,9 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
     show: false, success: false, message: "",
   });
 
+  // Ref para capturar la función de descarga PDF del diagrama de arquitectura
+  const arqDownloadRef = useRef<(() => Promise<void>) | null>(null);
+
   const prevRawDataRef = useRef<any>(null);
 
   const getActiveProjectId = () => {
@@ -104,21 +109,22 @@ export default function Documentacion({ expanded, onToggle }: { expanded: boolea
     if (typeof window === "undefined") return "";
     return localStorage.getItem("token") || "";
   };
-const mapDataToWidgets = (data: any): Widget[] => {
-  console.log("🔴 mapDataToWidgets →", data);
-  
-  return Object.entries(data)
-    .filter(([key]) => !isNaN(Number(key)))  // solo llaves numéricas (posiciones)
-    .sort(([a], [b]) => Number(a) - Number(b))  // ordenar por posición
-    .map(([key, w]: [string, any]) => ({
-      posicion: Number(key),
-      id_widget: w.id_widget ?? key,
-      titulo: w.titulo ?? key,
-      objetivo_widget: w.objetivo_widget ?? "",
-      descripcion_campos: w.descripcion_campos ?? {},
-      campos: w.campos ?? {},
-    }));
-};
+
+  const mapDataToWidgets = (data: any): Widget[] => {
+    console.log("🔴 mapDataToWidgets →", data);
+    return Object.entries(data)
+      .filter(([key]) => !isNaN(Number(key)))
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([key, w]: [string, any]) => ({
+        posicion: Number(key),
+        id_widget: w.id_widget ?? key,
+        titulo: w.titulo ?? key,
+        objetivo_widget: w.objetivo_widget ?? "",
+        descripcion_campos: w.descripcion_campos ?? {},
+        campos: w.campos ?? {},
+      }));
+  };
+
   useEffect(() => {
     let isMounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -257,26 +263,22 @@ const mapDataToWidgets = (data: any): Widget[] => {
     : "w-full max-w-xs h-full transition-all duration-300";
 
   const handleDownload = async () => {
+    // ── Arquitectura: descarga PDF via la función registrada por ArquitecturaDiagram ──
     if (tab === "Arquitectura") {
-      const svgEl = document.querySelector(
-        "#arq-svg-container svg",
-      ) as SVGSVGElement | null;
-      if (!svgEl) return;
-      const serializer = new XMLSerializer();
-      const svgStr = serializer.serializeToString(svgEl);
-      const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "arquitectura.svg";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      setShowPopup(true);
+      if (arqDownloadRef.current) {
+        await arqDownloadRef.current();
+        setShowPopup(true);
+      } else {
+        setEmailPopup({
+          show: true,
+          success: false,
+          message: "El diagrama aún no está listo para descargar.",
+        });
+      }
       return;
     }
 
+    // ── ERS / Análisis: descarga Word ──
     const docId = getActiveProjectId();
     if (!docId) {
       setEmailPopup({
@@ -358,69 +360,64 @@ const mapDataToWidgets = (data: any): Widget[] => {
                 {(
                   [
                     "ERS",
-                    //OCULTAR_ANALISIS "Análisis",
                     "Arquitectura",
-                    //OCULTAR_ANALISIS (así es como estaba antes pero quitando análisis marca error)] as const).map((t) => (
                   ] as ("ERS" | "Análisis" | "Arquitectura")[]
-                ).map(
-                  (
-                    t, //momentáneo
-                  ) => (
-                    <div key={t} className="flex shrink-0 flex-col gap-1">
-                      <span className="px-1 text-xs font-bold uppercase tracking-wider text-gray-500">
-                        {DOC_NAMES[t]}
-                      </span>
-                      <div className="relative h-72 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md">
-                        {t === "ERS" || t === "Análisis" ? (
-                          <div
-                            className="pointer-events-none h-full w-full overflow-hidden"
-                            style={{
-                              transform: "scale(0.33)",
-                              transformOrigin: "top left",
-                              width: "303%",
-                              height: "303%",
-                            }}
-                          >
-                            {loadingERS ? (
-                              <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                                Cargando ERS...
-                              </div>
-                            ) : (
-                              <WidgetRenderer
-                                widgets={widgets}
-                                changedFields={changedFields}
-                              />
-                            )}
-                          </div>
-                        ) : (
-                          <div
-                            className="pointer-events-none h-full w-full overflow-hidden"
-                            style={{
-                              transform: "scale(0.33)",
-                              transformOrigin: "top left",
-                              width: "303%",
-                              height: "303%",
-                            }}
-                          >
-                            <ArquitecturaDiagram />
-                          </div>
-                        )}
-                        <button
-                          onClick={() => {
-                            setTab(t);
-                            onToggle();
+                ).map((t) => (
+                  <div key={t} className="flex shrink-0 flex-col gap-1">
+                    <span className="px-1 text-xs font-bold uppercase tracking-wider text-gray-500">
+                      {DOC_NAMES[t]}
+                    </span>
+                    <div className="relative h-72 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md">
+                      {t === "ERS" || t === "Análisis" ? (
+                        <div
+                          className="pointer-events-none h-full w-full overflow-hidden"
+                          style={{
+                            transform: "scale(0.33)",
+                            transformOrigin: "top left",
+                            width: "303%",
+                            height: "303%",
                           }}
-                          className="group absolute inset-0 h-full w-full bg-transparent transition hover:bg-[#EB0029]/5"
-                          title="Expandir para ver completo"
                         >
-                          <span className="absolute bottom-2 right-2 rounded-full bg-[#EB0029] px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
-                            Ver completo
-                          </span>
-                        </button>
-                      </div>
+                          {loadingERS ? (
+                            <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                              Cargando ERS...
+                            </div>
+                          ) : (
+                            <WidgetRenderer
+                              widgets={widgets}
+                              changedFields={changedFields}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div
+                          className="pointer-events-none h-full w-full overflow-hidden"
+                          style={{
+                            transform: "scale(0.33)",
+                            transformOrigin: "top left",
+                            width: "303%",
+                            height: "303%",
+                          }}
+                        >
+                          {/* Preview en vista colapsada: sin registrar descarga */}
+                          <ArquitecturaDiagram />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          setTab(t);
+                          onToggle();
+                        }}
+                        className="group absolute inset-0 h-full w-full bg-transparent transition hover:bg-[#EB0029]/5"
+                        title="Expandir para ver completo"
+                      >
+                        <span className="absolute bottom-2 right-2 rounded-lg bg-[#EB0029] px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
+                          Ver completo
+                        </span>
+                      </button>
                     </div>
-                  ),
-                )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -429,64 +426,66 @@ const mapDataToWidgets = (data: any): Widget[] => {
           {expanded && (
             <>
               <div className="relative mb-5 flex items-center justify-center">
-                <div className="flex gap-2 rounded-full bg-white px-2 py-2 shadow">
+                <div className="flex gap-2 rounded-lg bg-white px-2 py-2 shadow">
                   {(
                     [
                       "ERS",
-                      // OCULTAR_ANALISIS "Análisis",
                       "Arquitectura",
-                      //OCULTAR_ANALISIS (así es como estaba antes pero quitando análisis marca error)] as const).map((t) => (
                     ] as ("ERS" | "Análisis" | "Arquitectura")[]
-                  ).map(
-                    (
-                      t, //momentáneo
-                    ) => (
-                      <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        className={
-                          tab === t
-                            ? "rounded-full bg-[#EB0029] px-10 py-2 text-sm font-semibold text-white shadow"
-                            : "rounded-full px-10 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
-                        }
-                      >
-                        {t}
-                      </button>
-                    ),
-                  )}
+                  ).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTab(t)}
+                      className={
+                        tab === t
+                          ? "rounded-lg bg-[#EB0029] px-10 py-2 text-sm font-semibold text-white shadow"
+                          : "rounded-lg px-10 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-100"
+                      }
+                    >
+                      {t}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="absolute right-0 flex items-center gap-2">
-                  <button
-                    onClick={handleSendEmail}
-                    disabled={sendingEmail}
-                    className="flex cursor-pointer items-center gap-2 bg-transparent p-2 transition hover:scale-110 disabled:cursor-not-allowed disabled:opacity-60"
-                    title="Enviar documento por correo"
-                  >
-                    {sendingEmail ? (
-                      <Loader2
-                        size={22}
-                        className="animate-spin text-[#EB0029]"
-                      />
-                    ) : (
-                      <Mail className="text-[#EB0029]" size={22} />
-                    )}
-                    <span className="font-medium text-[#EB0029]">
-                      {sendingEmail ? "Enviando..." : "Enviar por correo"}
-                    </span>
-                  </button>
+              <button
+                onClick={handleSendEmail}
+                disabled={sendingEmail}
+                className="group flex cursor-pointer items-center gap-2 bg-transparent p-2 transition disabled:cursor-not-allowed disabled:opacity-60"
+                title="Enviar documento por correo"
+              >
+                {sendingEmail ? (
+                  <Loader2
+                    size={22}
+                    className="animate-spin text-[#EB0029]"
+                  />
+                ) : (
+                  <Mail
+                    className="text-[#EB0029] transition group-hover:text-gray-500"
+                    size={22}
+                  />
+                )}
 
-                  <button
-                    onClick={handleDownload}
-                    className="flex cursor-pointer items-center gap-2 bg-transparent p-2 transition hover:scale-110"
-                    title="Descargar documento"
-                  >
-                    <Download className="text-[#EB0029]" size={22} />
-                    <span className="font-medium text-[#EB0029]">
-                      Descargar
-                    </span>
-                  </button>
-                </div>
+                <span className="font-medium text-[#EB0029] transition group-hover:text-gray-700">
+                  {sendingEmail ? "Enviando..." : "Enviar por correo"}
+                </span>
+              </button>
+
+              <button
+                onClick={handleDownload}
+                className="group flex cursor-pointer items-center gap-2 bg-transparent p-2 transition"
+                title="Descargar documento"
+              >
+                <Download
+                  className="text-[#EB0029] transition group-hover:text-gray-500"
+                  size={22}
+                />
+
+                <span className="font-medium text-[#EB0029] transition group-hover:text-gray-500">
+                  Descargar
+                </span>
+              </button>
+              </div>
               </div>
 
               <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-white shadow">
@@ -508,7 +507,12 @@ const mapDataToWidgets = (data: any): Widget[] => {
                     id="arq-svg-container"
                     className="h-full w-full overflow-auto p-4"
                   >
-                    <ArquitecturaDiagram />
+                    {/* Vista expandida: registrar la función de descarga PDF */}
+                    <ArquitecturaDiagram
+                      onRegisterDownload={(fn) => {
+                        arqDownloadRef.current = fn;
+                      }}
+                    />
                   </div>
                 )}
               </div>
