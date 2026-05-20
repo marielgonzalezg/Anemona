@@ -1,10 +1,11 @@
 "use client";
 
-import { SendHorizonal, Bot, User, LayoutDashboard, Zap, CheckCircle2 } from "lucide-react";
+import { SendHorizonal, Bot, User, LayoutDashboard, Zap, CheckCircle2, Settings } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import FormModal from "./FormModal";
 import { API_URL } from "@/services/api";
 import HelpTooltip from "./Helptooltip";
+import ProjectSettingsModal from "./Projectsettingsmodal";
 
 type MsgRole = "user" | "bot" | "tool_call" | "tool_result";
 
@@ -74,10 +75,12 @@ export default function ChatBot() {
   const [loadingSession, setLoadingSession] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const endRef   = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [localChatReady, setLocalChatReady] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   const msgIdRef       = useRef(Date.now());
   const nextId         = () => ++msgIdRef.current;
@@ -125,6 +128,7 @@ export default function ChatBot() {
     }
     setInput(savedInput || "");
     setShowLoginModal(false);
+    checkPermiso(nextUserId, nextSessionId);
   };
 
   useEffect(() => {
@@ -353,14 +357,21 @@ export default function ChatBot() {
   }
 
   function renderMessage(m: Msg) {
-    if (m.role === "tool_call" || m.role === "tool_result") return renderToolChip(m);
+    if (m.role === "tool_call" || m.role === "tool_result")
+      return renderToolChip(m);
 
     return (
       <div
         key={m.id}
         className={[
-          m.role === "bot" ? "flex items-start gap-3" : "flex items-start gap-3 justify-end",
-          m.isNew ? (m.role === "bot" ? "animate-slideLeft" : "animate-slideRight") : "",
+          m.role === "bot"
+            ? "flex items-start gap-3"
+            : "flex items-start gap-3 justify-end",
+          m.isNew
+            ? m.role === "bot"
+              ? "animate-slideLeft"
+              : "animate-slideRight"
+            : "",
         ].join(" ")}
       >
         {m.role === "bot" && (
@@ -383,6 +394,20 @@ export default function ChatBot() {
     );
   }
 
+  const checkPermiso = async (uid: string, sid: string) => {
+    try {
+      const res = await fetch(`${API_URL}/session/${sid}/permiso/${uid}`);
+      if (res.ok) {
+        const data = await res.json();
+        setIsOwner(data.permiso === "OWNER");
+      } else {
+        setIsOwner(false);
+      }
+    } catch {
+      setIsOwner(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -400,9 +425,23 @@ export default function ChatBot() {
       `}</style>
 
       <section className="flex-1 min-w-[420px] min-h-0 relative">
-        <div className="h-full rounded-3xl bg-gray-100 shadow-md p-6 flex flex-col">
+        <div className="h-full rounded-3xl bg-gray-100 shadow-md flex flex-col">
 
-          <div className="flex-1 min-h-0 overflow-y-auto pr-2 flex flex-col gap-3">
+          {/* ── Header con botón de configuración ── */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 rounded-t-3xl flex-shrink-0">
+            {isOwner && (
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 bg-white rounded-xl px-3 py-2 shadow-sm hover:shadow transition"
+              >
+                <Settings size={15} />
+                <span className="font-medium">Configuración</span>
+              </button>
+            )}
+          </div>
+
+          {/* ── Mensajes ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-4 pr-4 flex flex-col gap-3">
             {messages.map((m) => renderMessage(m))}
 
             {/* ── Burbuja "pensando" ── */}
@@ -425,13 +464,19 @@ export default function ChatBot() {
             <div ref={endRef} />
           </div>
 
-          <div className="mt-5 flex items-center gap-3">
+          {/* ── Input ── */}
+          <div className="px-6 pb-6 pt-4 flex items-center gap-3 flex-shrink-0">
             <div className="relative flex-1">
               <input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
                 placeholder={userId && sessionId ? "Escribe tu pregunta..." : "Primero inicia sesión"}
                 disabled={!userId || !sessionId}
                 className="w-full rounded-2xl bg-white px-5 pr-14 py-4 text-sm shadow outline-none focus:ring-2 focus:ring-[#EB0029]/30 disabled:bg-gray-200 disabled:cursor-not-allowed"
@@ -446,22 +491,22 @@ export default function ChatBot() {
               </button>
             </div>
 
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent("open-widgets-modal"))}
+                className="bg-[#EB0029] text-white font-semibold text-sm px-5 py-3 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+              >
+                <LayoutDashboard size={20} />
+                Widgets
+              </button>
 
-<div className="flex items-center gap-2">
-  <button
-    onClick={() => window.dispatchEvent(new CustomEvent("open-widgets-modal"))}
-    className="bg-[#EB0029] text-white font-semibold text-sm px-5 py-3 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
-  >
-    <LayoutDashboard size={20} />
-    Widgets
-  </button>
-
-  <HelpTooltip
-    text="Aquí puedes agregar, editar y personalizar las secciones y widgets de la plantilla según las necesidades de tu proyecto."
-    position="right"
-  />
-</div>
+              <HelpTooltip
+                text="Aquí puedes agregar, editar y personalizar las secciones y widgets de la plantilla según las necesidades de tu proyecto."
+                position="right"
+              />
+            </div>
           </div>
+
         </div>
 
         <FormModal
@@ -472,6 +517,13 @@ export default function ChatBot() {
           onClose={() => setShowLoginModal(false)}
           onSubmit={handleProjectCreated}
         />
+
+        <ProjectSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          projectName="Mi Proyecto"
+        />
+
       </section>
     </>
   );
