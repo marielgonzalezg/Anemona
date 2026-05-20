@@ -90,7 +90,15 @@ export default function ProjectSettingsModal({
         throw new Error(data.detail || "Error al agregar colaborador");
       setConfirmAdd(false);
       setAddEmail("");
+      
+    if (data.ya_existia) {
+      // Ya era colaborador — muestra error en lugar de éxito
+      setErrorMsg(`El usuario ${addEmail} ya es colaborador de este proyecto.`);
+      setShowError(true);
+    } else {
       setShowAddSuccess(true);
+    }
+
     } catch (error) {
       setConfirmAdd(false);
       setErrorMsg(
