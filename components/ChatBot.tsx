@@ -396,7 +396,7 @@ export default function ChatBot() {
 
   const checkPermiso = async (uid: string, sid: string) => {
     try {
-      const res = await fetch(`${API_URL}/session/${sid}/permiso/${uid}`);
+      const res = await fetch(`${API_URL}/colaboracion/session/${sid}/permiso/${uid}`);
       if (res.ok) {
         const data = await res.json();
         setIsOwner(data.permiso === "OWNER");
