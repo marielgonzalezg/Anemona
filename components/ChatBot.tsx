@@ -87,6 +87,17 @@ export default function ChatBot() {
   const activeBotIdRef = useRef<number | null>(null);
   const lastEventRef   = useRef<"text" | "tool" | null>(null);
 
+  const [projectFolio, setProjectFolio] = useState<number | null>(() => {
+  if (typeof window === "undefined") return null;
+  const saved = sessionStorage.getItem("project_folio");
+  return saved ? Number(saved) : null;
+});
+  
+const [projectName, setProjectName] = useState(() => {
+  if (typeof window === "undefined") return "Mi Proyecto";
+  return sessionStorage.getItem("project_name") || "Mi Proyecto";
+});
+
   useEffect(() => {
     console.log("CHATBOT MONTADO");
 
@@ -133,10 +144,12 @@ export default function ChatBot() {
 
   useEffect(() => {
     const handleSessionChanged = (event: Event) => {
-      const e = event as CustomEvent<{ userId: string; sessionId: string; projectId?: string }>;
-      const { userId: u, sessionId: s, projectId } = e.detail ?? {};
+      const e = event as CustomEvent<{ userId: string; sessionId: string; projectId?: string; folio?: number; nombreproyecto?: string}>;
+      const { userId: u, sessionId: s, projectId , folio, nombreproyecto} = e.detail ?? {};
       if (!u || !s) return;
       if (projectId) sessionStorage.setItem("project_id", projectId);
+      if (folio) setProjectFolio(folio);
+      if (nombreproyecto) setProjectName(nombreproyecto);
       loadSessionData(u, s);
     };
     window.addEventListener("chat-session-changed", handleSessionChanged);
@@ -148,11 +161,15 @@ export default function ChatBot() {
   useEffect(() => {
     const savedSessionId = sessionStorage.getItem("chat_session_id");
     const savedUserId    = sessionStorage.getItem("chat_user_id");
+    const savedFolio     = sessionStorage.getItem("project_folio");
+    const savedName      = sessionStorage.getItem("project_name");
     if (savedUserId && savedSessionId) {
       loadSessionData(savedUserId, savedSessionId);
     } else {
       setShowLoginModal(true);
     }
+    if (savedFolio) setProjectFolio(Number(savedFolio));
+    if (savedName) setProjectName(savedName);
     setLocalChatReady(true);
   }, []);
 
@@ -408,6 +425,8 @@ export default function ChatBot() {
     }
   };
 
+  console.log("projectFolio al renderizar:", projectFolio);
+
   return (
     <>
       <style>{`
@@ -431,7 +450,13 @@ export default function ChatBot() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 rounded-t-3xl flex-shrink-0">
             {isOwner && (
               <button
-                onClick={() => setShowSettingsModal(true)}
+                onClick={() => {
+                const folio = sessionStorage.getItem("project_folio");
+                const name  = sessionStorage.getItem("project_name");
+                if (folio) setProjectFolio(Number(folio));
+                if (name) setProjectName(name); 
+                setShowSettingsModal(true);
+              }}
                 className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 bg-white rounded-xl px-3 py-2 shadow-sm hover:shadow transition"
               >
                 <Settings size={15} />
@@ -518,10 +543,13 @@ export default function ChatBot() {
           onSubmit={handleProjectCreated}
         />
 
+
         <ProjectSettingsModal
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
-          projectName="Mi Proyecto"
+          projectName={projectName}
+          folio={projectFolio ?? 0}
+          onRename={(name) => setProjectName(name)}
         />
 
       </section>

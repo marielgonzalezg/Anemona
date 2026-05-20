@@ -1,29 +1,69 @@
 "use client";
 
 import { X, Check, UserPlus, UserMinus, FolderEdit } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { API_URL } from "@/services/api";
 
 interface ProjectSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectName?: string;
+  folio: number;
+  onRename?: (newName: string) => void;
 }
+
 
 export default function ProjectSettingsModal({
   isOpen,
   onClose,
   projectName = "",
+  folio,
+  onRename
 }: ProjectSettingsModalProps) {
   const [newName, setNewName] = useState(projectName);
+  useEffect(() => {
+    setNewName(projectName);
+  }, [projectName]);
   const [addEmail, setAddEmail] = useState("");
   const [removeEmail, setRemoveEmail] = useState("");
+    console.log("folio prop recibido:", folio);
+    const [showSuccess, setShowSuccess] = useState(false);
 
   // TODO: conectar estos handlers a sus endpoints cuando estén listos
-  const handleRename = () => {
-    if (!newName.trim()) return;
-    console.log("Renombrar proyecto a:", newName.trim());
-    // await fetch(`/api/projects/${id}`, { method: "PATCH", body: ... })
-  };
+  
+  const handleRename = async () => {
+  if (!newName.trim()) return;
+  if (folio === null || folio === undefined) {
+    console.error("folio es undefined, no se puede renombrar el proyecto");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URL}/colaboracion/${folio}/renombrar-proyecto`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombreproyecto: newName.trim() }),
+      }
+    );
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      throw new Error(`Respuesta inesperada del servidor (status ${response.status})`);
+    }
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Error al renombrar proyecto");
+
+    console.log("Proyecto renombrado:", data);
+    sessionStorage.setItem("project_name", newName.trim()); 
+    onRename?.(newName.trim());                             
+    setShowSuccess(true);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const handleAddCollaborator = () => {
     if (!addEmail.trim()) return;
@@ -161,6 +201,31 @@ export default function ProjectSettingsModal({
           </button>
         </div>
       </div>
+      {showSuccess && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowSuccess(false)} />
+          <div className="relative mx-4 flex min-w-[300px] max-w-sm animate-in zoom-in fade-in flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-2xl duration-200">
+            <button onClick={() => setShowSuccess(false)} className="absolute top-3 right-3 text-gray-400 transition hover:text-gray-600">
+              <X size={18} />
+            </button>
+
+            <img src="/images/OpExitosa.png" alt="Operación exitosa" className="w-24 h-24 object-contain" />
+
+            <div className="text-center">
+              <h2 className="mb-1 text-lg font-bold text-gray-800">¡Nombre actualizado!</h2>
+              <p className="text-sm text-gray-500">
+                El proyecto ahora se llama <span className="font-semibold text-gray-700">{newName}</span>.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSuccess(false)}
+              className="bg-[#EB0029] text-white font-semibold text-sm px-8 py-3 rounded-lg hover:bg-red-700 transition"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
